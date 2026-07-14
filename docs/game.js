@@ -228,6 +228,11 @@
     const shooterName = state.shooter === "home" ? homeName : awayName;
 
     if (state.phase === "aim") {
+      if (state.shotZone != null && state.diveZone != null) {
+        statusLabel.textContent = "Scoring the round…";
+        return;
+      }
+
       if (amShooter) {
         if (state.shotZone === null) {
           statusLabel.textContent = "Your turn to shoot! Tap a zone.";
@@ -251,49 +256,52 @@
 
   async function maybeResolveRound() {
     if (!roomRef || resolving) return;
+    // Home player (game creator) resolves rounds to avoid conflicts
+    if (mySide !== "home") return;
 
     const snap = await roomRef.once("value");
     const state = snap.val();
     if (!state || state.status !== "playing" || state.phase !== "aim") return;
-    if (state.shotZone === null || state.diveZone === null) return;
+    if (state.shotZone == null || state.diveZone == null) return;
+    if (state.history?.some((h) => h.round === state.round)) return;
 
     resolving = true;
     try {
-      await roomRef.transaction((current) => {
-        if (!current || current.status !== "playing" || current.phase !== "aim") return;
-        if (current.shotZone === null || current.diveZone === null) return;
+      const scored = state.shotZone !== state.diveZone;
+      const newScore = { home: state.score.home, away: state.score.away };
+      if (scored) newScore[state.shooter] += 1;
 
-        const { shotZone, diveZone, shooter, round, score } = current;
-        const scored = shotZone !== diveZone;
-        const newScore = { home: score.home, away: score.away };
-        if (scored) newScore[shooter] += 1;
+      const historyEntry = {
+        round: state.round,
+        shooter: state.shooter,
+        shotZone: state.shotZone,
+        diveZone: state.diveZone,
+        scored,
+      };
+      const newHistory = [...(state.history || []), historyEntry];
+      const winner = checkMatchEnd(newScore, state.round);
 
-        const historyEntry = { round, shooter, shotZone, diveZone, scored };
-        const newHistory = [...(current.history || []), historyEntry];
-        const winner = checkMatchEnd(newScore, round);
-
-        if (winner) {
-          return {
-            ...current,
-            score: newScore,
-            history: newHistory,
-            status: "finished",
-            winner,
-            phase: "finished",
-          };
-        }
-
-        return {
-          ...current,
+      if (winner) {
+        await roomRef.update({
           score: newScore,
           history: newHistory,
-          round: round + 1,
-          shooter: shooter === "home" ? "away" : "home",
+          status: "finished",
+          winner,
+          phase: "finished",
+        });
+      } else {
+        await roomRef.update({
+          score: newScore,
+          history: newHistory,
+          round: state.round + 1,
+          shooter: state.shooter === "home" ? "away" : "home",
           shotZone: null,
           diveZone: null,
           phase: "aim",
-        };
-      });
+        });
+      }
+    } catch (err) {
+      console.error("Resolve failed:", err);
     } finally {
       resolving = false;
     }
@@ -308,7 +316,7 @@
     gameSection.classList.remove("hidden");
     buildGoalZones();
 
-    roomRef = db.ref(`rooms/${code}`);
+    roomRef = db.ref(`soccer-rooms/${code}`);
     if (unsubscribe) roomRef.off("value", unsubscribe);
 
     unsubscribe = roomRef.on("value", (snap) => {
@@ -350,12 +358,12 @@
     try {
       const name = getPlayerName();
       let code = generateRoomCode();
-      let ref = db.ref(`rooms/${code}`);
+      let ref = db.ref(`soccer-rooms/${code}`);
 
       let existing = await ref.once("value");
       while (existing.val()) {
         code = generateRoomCode();
-        ref = db.ref(`rooms/${code}`);
+        ref = db.ref(`soccer-rooms/${code}`);
         existing = await ref.once("value");
       }
 
@@ -384,7 +392,7 @@
 
     try {
       const name = getPlayerName();
-      const ref = db.ref(`rooms/${code}`);
+      const ref = db.ref(`soccer-rooms/${code}`);
       const snap = await ref.once("value");
       const state = snap.val();
 
