@@ -18,7 +18,7 @@ body {
 }
 
 #game.card {
-  max-width: 480px;
+  max-width: 520px;
   margin-left: auto;
   margin-right: auto;
   padding: 16px;
@@ -274,18 +274,20 @@ input:focus {
   opacity: 1;
 }
 
-/* ── Pitch simulation scene (realistic penalty distance) ── */
+/* ── Stadium pitch scene ── */
 .pitch-scene {
   position: relative;
-  height: min(62vw, 420px);
-  min-height: 360px;
+  height: min(72vw, 500px);
+  min-height: 440px;
   margin-bottom: 14px;
   border-radius: 12px;
   overflow: hidden;
-  border: 2px solid rgba(255, 255, 255, 0.12);
-  background: #1b5e20;
-  box-shadow: inset 0 -20px 40px rgba(0, 0, 0, 0.25), 0 4px 16px rgba(0, 0, 0, 0.35);
-  perspective: 520px;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  background: #0d2818;
+  box-shadow:
+    inset 0 0 60px rgba(0, 0, 0, 0.4),
+    0 8px 28px rgba(0, 0, 0, 0.5);
+  perspective: 680px;
 }
 
 .pitch-scene.simulating {
@@ -308,11 +310,134 @@ input:focus {
 
 .svg-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
 
-/* Sky & clouds */
+/* ── Stadium bowl & crowd ── */
+.stadium-bowl {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.floodlights {
+  position: absolute;
+  top: 0;
+  width: 18px;
+  height: 28px;
+  background: linear-gradient(180deg, #eceff1 0%, #90a4ae 100%);
+  border-radius: 2px 2px 4px 4px;
+  box-shadow: 0 0 30px 12px rgba(255, 248, 200, 0.25);
+  z-index: 2;
+}
+
+.flood-left { left: 6%; }
+.flood-right { right: 6%; }
+
+.floodlights::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 80px;
+  height: 120px;
+  margin-left: -40px;
+  background: radial-gradient(ellipse at top, rgba(255, 250, 200, 0.2) 0%, transparent 70%);
+}
+
+.stand {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stand-back {
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 38%;
+  padding: 4px 2% 0;
+}
+
+.stand-left {
+  top: 32%;
+  left: 0;
+  bottom: 8%;
+  width: 14%;
+  padding: 0 2px;
+}
+
+.stand-right {
+  top: 32%;
+  right: 0;
+  bottom: 8%;
+  width: 14%;
+  padding: 0 2px;
+}
+
+.stand-tier {
+  flex: 1;
+  border-radius: 4px 4px 0 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #37474f 0%, #263238 100%);
+  box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.stand-left .stand-tier,
+.stand-right .stand-tier {
+  border-radius: 0 4px 4px 0;
+}
+
+.stand-right .stand-tier {
+  border-radius: 4px 0 0 4px;
+}
+
+.crowd-block {
+  width: 100%;
+  height: 100%;
+  opacity: 0.92;
+  background:
+    radial-gradient(circle at 8% 30%, #e53935 1.5px, transparent 1.5px),
+    radial-gradient(circle at 22% 55%, #1e88e5 1.5px, transparent 1.5px),
+    radial-gradient(circle at 38% 25%, #fdd835 1.5px, transparent 1.5px),
+    radial-gradient(circle at 52% 70%, #fff 1.5px, transparent 1.5px),
+    radial-gradient(circle at 68% 40%, #43a047 1.5px, transparent 1.5px),
+    radial-gradient(circle at 82% 60%, #8e24aa 1.5px, transparent 1.5px),
+    radial-gradient(circle at 15% 80%, #ff7043 1.5px, transparent 1.5px),
+    radial-gradient(circle at 90% 20%, #26c6da 1.5px, transparent 1.5px);
+  background-size: 14px 12px, 16px 14px, 12px 11px, 15px 13px, 13px 12px, 17px 15px, 14px 12px, 16px 14px;
+  animation: crowdWave 3s ease-in-out infinite alternate;
+}
+
+.stand-back .crowd-block {
+  background-size: 10px 9px, 12px 10px, 11px 9px, 13px 11px, 10px 9px, 14px 12px, 11px 10px, 12px 11px;
+}
+
+@keyframes crowdWave {
+  from { transform: translateY(0); filter: brightness(1); }
+  to { transform: translateY(-1px); filter: brightness(1.08); }
+}
+
+.pitch-scene.simulating .crowd-block {
+  animation: crowdCheer 0.6s ease-in-out infinite alternate;
+}
+
+@keyframes crowdCheer {
+  from { transform: scaleY(1); }
+  to { transform: scaleY(1.04) translateY(-2px); }
+}
+
+/* Sky & night-match lighting */
 .pitch-sky {
   position: absolute;
-  inset: 0 0 74% 0;
-  background: linear-gradient(180deg, #3d6a9e 0%, #6fa8dc 55%, #9ec8ee 100%);
+  inset: 0 0 78% 0;
+  background: linear-gradient(180deg, #0d1b3e 0%, #1a237e 35%, #3949ab 70%, #5c6bc0 100%);
+  z-index: 1;
+}
+
+.sky-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 90% 70% at 50% 0%, rgba(255, 248, 200, 0.18) 0%, transparent 55%);
 }
 
 .cloud {
@@ -352,14 +477,18 @@ input:focus {
 .cloud-b::before { width: 16px; height: 16px; top: -8px; left: 4px; }
 .cloud-b::after { width: 14px; height: 14px; top: -6px; right: 6px; }
 
-/* Grass pitch */
+/* Grass pitch — narrow strip, deep perspective */
 .pitch-grass {
   position: absolute;
   bottom: 0;
-  left: 0;
-  right: 0;
-  height: 74%;
-  background: linear-gradient(180deg, #43a047 0%, #2e7d32 40%, #1b5e20 100%);
+  left: 8%;
+  right: 8%;
+  height: 78%;
+  z-index: 2;
+  background: linear-gradient(180deg, #4caf50 0%, #388e3c 25%, #2e7d32 55%, #1b5e20 100%);
+  transform: rotateX(12deg);
+  transform-origin: bottom center;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .grass-mow {
@@ -392,55 +521,56 @@ input:focus {
 
 .box-line {
   bottom: 0;
-  left: 4%;
-  right: 4%;
-  height: 52%;
+  left: 2%;
+  right: 2%;
+  height: 58%;
   border-bottom: none;
   border-radius: 2px 2px 0 0;
 }
 
 .penalty-spot {
   position: absolute;
-  bottom: 9%;
+  bottom: 5%;
   left: 50%;
-  width: 9px;
-  height: 9px;
-  margin-left: -4.5px;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
 .penalty-arc {
   position: absolute;
-  bottom: 5.5%;
+  bottom: 2%;
   left: 50%;
-  width: 80px;
-  height: 40px;
-  margin-left: -40px;
-  border: 2px solid rgba(255, 255, 255, 0.82);
+  width: 90px;
+  height: 45px;
+  margin-left: -45px;
+  border: 2px solid rgba(255, 255, 255, 0.88);
   border-bottom: none;
-  border-radius: 80px 80px 0 0;
-  box-shadow: 0 0 2px rgba(0, 0, 0, 0.15);
+  border-radius: 90px 90px 0 0;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
 }
 
 .goal-shadow {
   position: absolute;
-  top: 4%;
-  left: 10%;
-  right: 10%;
-  height: 14px;
-  background: radial-gradient(ellipse, rgba(0,0,0,0.4) 0%, transparent 70%);
+  top: 2%;
+  left: 8%;
+  right: 8%;
+  height: 16px;
+  background: radial-gradient(ellipse, rgba(0,0,0,0.5) 0%, transparent 70%);
 }
 
-/* 3D goal frame — smaller & higher for realistic penalty depth */
+/* 3D goal — far end of pitch */
 .goal-3d {
   position: absolute;
-  top: 5%;
-  left: 10%;
-  right: 10%;
-  height: 36%;
-  transform: rotateX(8deg);
+  top: 3%;
+  left: 12%;
+  right: 12%;
+  height: 28%;
+  z-index: 5;
+  transform: rotateX(14deg);
   transform-origin: bottom center;
 }
 
@@ -624,8 +754,8 @@ input:focus {
   height: auto;
 }
 
-.shooter-svg { width: 56px; }
-.keeper-svg { width: 62px; }
+.shooter-svg { width: 62px; }
+.keeper-svg { width: 68px; }
 
 .leg { transform-origin: 30px 64px; }
 
@@ -674,27 +804,53 @@ input:focus {
 }
 
 @keyframes keeperReady {
-  from { transform: translate(-50%, 0); }
-  to { transform: translate(-50%, -4px); }
+  from { transform: translate(-50%, -92%); }
+  to { transform: translate(-50%, calc(-92% - 5px)); }
 }
 
-.head { fill: #d4a574; }
-.hair { fill: #3e2723; }
+.head { fill: #c68642; }
+.hair { fill: #1a1a1a; }
 .shorts { fill: #1a1a1a; }
 .sock { fill: #f5f5f5; }
 .boot { fill: #212121; }
-.arm { fill: #d4a574; }
+.arm { fill: #c68642; }
 
-.shooter-jersey { fill: #1565c0; }
-.pitch-scene.shooter-home .shooter-jersey { fill: #1565c0; }
-.pitch-scene.shooter-away .shooter-jersey { fill: #c62828; }
+/* Ronaldo — Portugal kit */
+.shooter-jersey { fill: url(#portugalJersey); }
+.egypt-shorts { fill: #111; }
+.keeper-jersey { fill: url(#egyptJersey); }
+.glove { fill: #1b5e20; stroke: #0d3d13; stroke-width: 1; }
 
-.keeper-jersey { fill: #f9a825; }
-.glove { fill: #ff6f00; stroke: #e65100; stroke-width: 1; }
+.player-label {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.shooter-label {
+  color: #ffcdd2;
+  border: 1px solid rgba(229, 57, 53, 0.5);
+}
+
+.keeper-label {
+  color: #ffcdd2;
+  border: 1px solid rgba(206, 17, 38, 0.5);
+}
 
 .scene-shooter {
   position: absolute;
-  bottom: 1%;
+  bottom: 0;
   left: 50%;
   transform: translateX(-50%);
   z-index: 4;
@@ -710,7 +866,7 @@ input:focus {
 }
 
 .scene-shooter.wind-up .shooter-figure {
-  transform-origin: 26px 76px;
+  transform-origin: 28px 80px;
   animation: windUpBody 0.85s ease-in-out infinite alternate;
 }
 
@@ -807,14 +963,12 @@ input:focus {
 }
 
 .scene-shooter.kick .shooter-figure {
-  transform-origin: 26px 76px;
+  transform-origin: 28px 80px;
 }
 
 .scene-keeper {
   position: absolute;
-  bottom: 0;
-  left: 50%;
-  z-index: 7;
+  z-index: 6;
   touch-action: none;
   cursor: grab;
   transition: left 0.55s cubic-bezier(0.25, 0.8, 0.3, 1),
@@ -832,7 +986,7 @@ input:focus {
 }
 
 .scene-keeper.idle {
-  transform: translate(-50%, 0);
+  transform: translate(-50%, -92%);
   animation: keeperReady 1s ease-in-out infinite alternate;
 }
 
@@ -844,12 +998,12 @@ input:focus {
 
 .scene-ball {
   position: absolute;
-  bottom: 8%;
+  bottom: 4%;
   left: 50%;
   transform: translate(-50%, 0);
-  z-index: 6;
-  width: 26px;
-  height: 26px;
+  z-index: 5;
+  width: 24px;
+  height: 24px;
   filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.45));
   transition: left 0.5s cubic-bezier(0.15, 0.85, 0.35, 1),
               top 0.5s cubic-bezier(0.15, 0.85, 0.35, 1),
@@ -1053,12 +1207,13 @@ code {
   }
 
   .pitch-scene {
-    height: 220px;
-    min-height: 200px;
+    height: 260px;
+    min-height: 240px;
     margin-bottom: 10px;
   }
 
-  .shooter-svg { width: 40px; }
-  .keeper-svg { width: 44px; }
-  .scene-ball { width: 20px; height: 20px; }
+  .shooter-svg { width: 44px; }
+  .keeper-svg { width: 48px; }
+  .scene-ball { width: 18px; height: 18px; }
+  .player-label { font-size: 0.45rem; top: -10px; }
 }

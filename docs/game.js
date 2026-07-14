@@ -1,5 +1,6 @@
 (() => {
-  const GOAL = { left: 10, top: 5, width: 80, height: 34 };
+  const GOAL = { left: 12, top: 3, width: 76, height: 28 };
+  const KEEPER_LINE_Y = 96;
   const SAVE_RADIUS = 14;
   const ANIM_MS = 1500;
 
@@ -197,10 +198,11 @@
   function positionKeeperInGoal(x, y) {
     const keeper = $("scene-keeper");
     if (!keeper) return;
-    keeper.style.left = `${x}%`;
-    keeper.style.top = `${y}%`;
+    const pitch = goalToPitch(x, y);
+    keeper.style.left = `${pitch.left}%`;
+    keeper.style.top = `${pitch.top}%`;
     keeper.style.bottom = "auto";
-    keeper.style.transform = "translate(-50%, -55%)";
+    keeper.style.transform = "translate(-50%, -92%)";
   }
 
   function showShotMarker(x, y) {
@@ -256,10 +258,10 @@
     ball.className = "scene-ball";
     ball.style.left = "50%";
     ball.style.top = "auto";
-    ball.style.bottom = "8%";
+    ball.style.bottom = "4%";
 
     keeper.className = "scene-keeper idle";
-    positionKeeperInGoal(50, 92);
+    positionKeeperInGoal(50, KEEPER_LINE_Y);
 
     shooter.className = "scene-shooter idle";
     clearKickHints();
@@ -398,7 +400,7 @@
 
     const dive = previewDive || getDiveCoords(state);
     if (dive) positionKeeperInGoal(dive.x, dive.y);
-    else if (!keeperDragging) positionKeeperInGoal(50, 92);
+    else if (!keeperDragging) positionKeeperInGoal(50, KEEPER_LINE_Y);
   }
 
   function renderScoreboard(state) {
