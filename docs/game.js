@@ -11,6 +11,18 @@
   // Grid fills row-by-row; layout is 3 columns × 2 rows (low row, then high row).
   const ZONE_LAYOUT = [0, 2, 4, 1, 3, 5];
 
+  // Ball / keeper target positions on the pitch scene (%)
+  const ZONE_SCENE_POS = {
+    0: { left: 22, top: 54 },
+    1: { left: 22, top: 34 },
+    2: { left: 50, top: 54 },
+    3: { left: 50, top: 34 },
+    4: { left: 78, top: 54 },
+    5: { left: 78, top: 34 },
+  };
+
+  const ANIM_MS = 1500;
+
   const $ = (id) => document.getElementById(id);
 
   const lobby = $("lobby");
@@ -30,6 +42,7 @@
   const homeScoreEl = $("home-score");
   const awayScoreEl = $("away-score");
   const btnPlayAgain = $("btn-play-again");
+  const pitchScene = $("pitch-scene");
 
   let db = null;
   let roomRef = null;
@@ -38,7 +51,9 @@
   let mySide = null;
   let unsubscribe = null;
   let lastResultRound = 0;
+  let lastAnimatedRound = 0;
   let resolving = false;
+  let animating = false;
 
   if (!playerId) {
     playerId = crypto.randomUUID();
@@ -116,6 +131,99 @@
     return null;
   }
 
+  function delay(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  function resetScene() {
+    if (!pitchScene) return;
+    const ball = $("scene-ball");
+    const keeper = $("scene-keeper");
+    const shooter = $("scene-shooter");
+    const burst = $("action-burst");
+    const goal3d = pitchScene.querySelector(".goal-3d");
+
+    ball.className = "scene-ball";
+    ball.style.left = "50%";
+    ball.style.top = "auto";
+    ball.style.bottom = "20%";
+
+    keeper.className = "scene-keeper idle";
+    keeper.style.left = "50%";
+    keeper.style.top = "auto";
+    keeper.style.bottom = "2px";
+
+    shooter.className = "scene-shooter idle";
+    pitchScene.classList.remove("simulating", "is-goal", "is-save");
+    goal3d?.classList.remove("goal-shake");
+    burst.classList.add("hidden");
+    burst.className = "action-burst hidden";
+    burst.textContent = "";
+  }
+
+  async function playActionAnimation(entry, state) {
+    if (animating || entry.round === lastAnimatedRound) return;
+    animating = true;
+    lastAnimatedRound = entry.round;
+
+    const ball = $("scene-ball");
+    const keeper = $("scene-keeper");
+    const shooter = $("scene-shooter");
+    const burst = $("action-burst");
+    const goal3d = pitchScene?.querySelector(".goal-3d");
+    const shot = ZONE_SCENE_POS[entry.shotZone];
+    const dive = ZONE_SCENE_POS[entry.diveZone];
+    if (!shot || !dive || !ball || !keeper || !shooter) {
+      animating = false;
+      return;
+    }
+
+    pitchScene.classList.add("simulating");
+    pitchScene.classList.toggle("shooter-home", entry.shooter === "home");
+    pitchScene.classList.toggle("shooter-away", entry.shooter === "away");
+
+    shooter.classList.remove("idle");
+    shooter.classList.add("kick");
+    await delay(180);
+
+    ball.classList.add("fly");
+    ball.style.bottom = "auto";
+    ball.style.left = `${shot.left}%`;
+    ball.style.top = `${shot.top}%`;
+
+    keeper.classList.remove("idle");
+    keeper.classList.add("dive");
+    keeper.style.bottom = "auto";
+    keeper.style.left = `${dive.left}%`;
+    keeper.style.top = `${dive.top}%`;
+
+    await delay(580);
+
+    if (entry.scored) {
+      pitchScene.classList.add("is-goal");
+      goal3d?.classList.add("goal-shake");
+      burst.textContent = "GOAL! ⚽";
+      burst.className = "action-burst goal-text";
+    } else {
+      pitchScene.classList.add("is-save");
+      ball.classList.add("save-bounce");
+      burst.textContent = "SAVED! 🧤";
+      burst.className = "action-burst save-text";
+    }
+
+    await delay(ANIM_MS);
+    resetScene();
+    animating = false;
+    if (state) renderGame(state);
+  }
+
+  function renderPitchScene(state) {
+    if (!pitchScene || animating) return;
+    pitchScene.setAttribute("aria-hidden", "false");
+    pitchScene.classList.toggle("shooter-home", state.shooter === "home");
+    pitchScene.classList.toggle("shooter-away", state.shooter === "away");
+  }
+
   function buildGoalZones() {
     goalGridEl.innerHTML = "";
     ZONE_LAYOUT.forEach((zoneIndex) => {
@@ -158,7 +266,7 @@
       const canTap =
         (amShooter && state.shotZone == null) ||
         (amKeeper && state.diveZone == null);
-      const isInteractive = canPick && canTap;
+      const isInteractive = canPick && canTap && !animating;
 
       if (isMyPick) zone.classList.add("selected");
       if (isInteractive) zone.classList.add("active");
@@ -200,6 +308,11 @@
 
     renderScoreboard(state);
 
+    if (animating) {
+      statusLabel.textContent = "Watch the action! ⚽";
+      return;
+    }
+
     if (state.status === "finished") {
       if (state.winner === mySide) {
         statusLabel.textContent = "You win! 🎉";
@@ -220,6 +333,9 @@
     }
 
     const lastEntry = state.history?.[state.history.length - 1];
+    if (lastEntry && lastEntry.round !== lastAnimatedRound && !animating) {
+      playActionAnimation(lastEntry, state);
+    }
     if (lastEntry && lastEntry.round !== lastResultRound) {
       lastResultRound = lastEntry.round;
       resultLabel.classList.remove("hidden");
@@ -258,6 +374,7 @@
   }
 
   function renderGame(state) {
+    renderPitchScene(state);
     renderGoalGrid(state);
     updateStatus(state);
   }
@@ -319,6 +436,8 @@
     roomCode = code;
     mySide = side;
     lastResultRound = 0;
+    lastAnimatedRound = 0;
+    resetScene();
     roomCodeDisplay.textContent = code;
     lobby.classList.add("hidden");
     gameSection.classList.remove("hidden");
@@ -341,6 +460,9 @@
     roomCode = null;
     mySide = null;
     lastResultRound = 0;
+    lastAnimatedRound = 0;
+    animating = false;
+    resetScene();
     gameSection.classList.add("hidden");
     lobby.classList.remove("hidden");
     clearError();
@@ -477,6 +599,7 @@
     if (!state) return;
 
     lastResultRound = 0;
+    lastAnimatedRound = 0;
     await roomRef.update({
       score: { home: 0, away: 0 },
       round: 1,
@@ -520,5 +643,6 @@
 
   if (initFirebase()) {
     buildGoalZones();
+    resetScene();
   }
 })();

@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Penalty Shootout — Play Online</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=2" />
 </head>
 <body>
   <main class="app">
@@ -72,6 +72,35 @@
       <p id="status-label" class="status" role="status"></p>
       <p id="result-label" class="result hidden" role="alert"></p>
 
+      <!-- Live pitch simulation -->
+      <div id="pitch-scene" class="pitch-scene">
+        <div class="pitch-sky"></div>
+        <div class="pitch-grass">
+          <div class="pitch-stripe"></div>
+          <div class="pitch-stripe"></div>
+          <div class="pitch-stripe"></div>
+          <div class="penalty-spot"></div>
+          <div class="penalty-arc"></div>
+        </div>
+        <div class="goal-3d">
+          <div class="goal-post goal-left"></div>
+          <div class="goal-post goal-right"></div>
+          <div class="goal-crossbar"></div>
+          <div class="goal-net"></div>
+          <div id="scene-keeper" class="scene-keeper">
+            <span class="keeper-gloves">🧤</span>
+            <div class="player-head keeper-head"></div>
+            <div class="player-body keeper-body"></div>
+          </div>
+        </div>
+        <div id="scene-shooter" class="scene-shooter">
+          <div class="player-head shooter-head"></div>
+          <div class="player-body shooter-body"></div>
+        </div>
+        <div id="scene-ball" class="scene-ball">⚽</div>
+        <div id="action-burst" class="action-burst hidden"></div>
+      </div>
+
       <div class="goal-frame">
         <div id="goal-grid" class="goal-grid" role="group" aria-label="Goal zones"></div>
       </div>
@@ -86,6 +115,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
   <script src="firebase-config.js"></script>
-  <script src="game.js?v=6"></script>
+  <script src="game.js?v=7"></script>
 </body>
 </html>
