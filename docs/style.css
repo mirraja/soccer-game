@@ -808,44 +808,62 @@ input:focus {
   to { transform: translate(-50%, calc(-92% - 5px)); }
 }
 
-.head { fill: #c68642; }
-.hair { fill: #1a1a1a; }
-.shorts { fill: #1a1a1a; }
+.head { fill: url(#skinTone); }
+.hair { fill: #2c1810; }
+.hair-side { fill: none; }
+.cheek { fill: #ffb8a0; }
+.eye-white { fill: #fff; }
+.eye-iris { fill: #3e2723; }
+.eye-shine { fill: #fff; }
+.player-shorts { fill: #1a1a1a; }
 .sock { fill: #f5f5f5; }
 .boot { fill: #212121; }
-.arm { fill: #c68642; }
+.arm { fill: url(#skinTone); }
 
-/* Ronaldo — Portugal kit */
-.shooter-jersey { fill: url(#portugalJersey); }
-.egypt-shorts { fill: #111; }
-.keeper-jersey { fill: url(#egyptJersey); }
-.glove { fill: #1b5e20; stroke: #0d3d13; stroke-width: 1; }
+/* Team kits — home green, away red */
+.shooter-jersey { fill: url(#homeJersey); }
+.scene-shooter.player-away .shooter-jersey { fill: url(#awayJersey); }
+
+.keeper-jersey { fill: url(#homeJersey); }
+.scene-keeper.keeper-away .keeper-jersey { fill: url(#awayJersey); }
+
+.glove { fill: #ff8f00; stroke: #e65100; stroke-width: 1; }
 
 .player-label {
   position: absolute;
-  top: -14px;
+  top: -16px;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 0.55rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
   white-space: nowrap;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: rgba(0, 0, 0, 0.55);
+  max-width: 72px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.65);
   color: #fff;
   z-index: 10;
   pointer-events: none;
+  backdrop-filter: blur(4px);
 }
 
 .shooter-label {
-  color: #ffcdd2;
-  border: 1px solid rgba(229, 57, 53, 0.5);
+  border: 1px solid rgba(78, 204, 163, 0.45);
+}
+
+.scene-shooter.player-away .shooter-label {
+  border-color: rgba(233, 69, 96, 0.45);
 }
 
 .keeper-label {
-  color: #ffcdd2;
-  border: 1px solid rgba(206, 17, 38, 0.5);
+  border: 1px solid rgba(78, 204, 163, 0.45);
+}
+
+.scene-keeper.keeper-away .keeper-label {
+  border-color: rgba(233, 69, 96, 0.45);
 }
 
 .scene-shooter {

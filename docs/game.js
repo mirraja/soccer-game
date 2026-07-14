@@ -34,6 +34,8 @@
   const pitchScene = $("pitch-scene");
   const goalTouchZone = $("goal-touch-zone");
   const shotMarker = $("shot-marker");
+  const shooterLabelEl = $("shooter-label");
+  const keeperLabelEl = $("keeper-label");
 
   let db = null;
   let roomRef = null;
@@ -362,6 +364,33 @@
     );
   }
 
+  function truncateName(name, max = 12) {
+    if (!name) return "";
+    return name.length > max ? `${name.slice(0, max - 1)}…` : name;
+  }
+
+  function renderPlayerLabels(state) {
+    const homeName = state.playerHome || "Home";
+    const awayName = state.playerAway || "Away";
+    const shooterSide = state.shooter || "home";
+    const keeperSide = shooterSide === "home" ? "away" : "home";
+    const shooterName = shooterSide === "home" ? homeName : awayName;
+    const keeperName = keeperSide === "home" ? homeName : awayName;
+
+    if (shooterLabelEl) shooterLabelEl.textContent = truncateName(shooterName);
+    if (keeperLabelEl) {
+      keeperLabelEl.textContent = state.playerAway ? truncateName(keeperName) : "Keeper";
+    }
+
+    const shooterEl = $("scene-shooter");
+    const keeperEl = $("scene-keeper");
+
+    shooterEl?.classList.toggle("player-home", shooterSide === "home");
+    shooterEl?.classList.toggle("player-away", shooterSide === "away");
+    keeperEl?.classList.toggle("keeper-home", keeperSide === "home");
+    keeperEl?.classList.toggle("keeper-away", keeperSide === "away");
+  }
+
   function renderPitchInteraction(state) {
     if (!pitchScene) return;
 
@@ -490,6 +519,7 @@
   }
 
   function renderGame(state) {
+    renderPlayerLabels(state);
     renderPitchInteraction(state);
     updateStatus(state);
   }

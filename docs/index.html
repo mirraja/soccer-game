@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Penalty Shootout — Play Online</title>
-  <link rel="stylesheet" href="style.css?v=7" />
+  <link rel="stylesheet" href="style.css?v=8" />
 </head>
 <body>
   <main class="app">
@@ -95,14 +95,19 @@
               <stop offset="65%" stop-color="#f5f5f5"/>
               <stop offset="100%" stop-color="#bdbdbd"/>
             </linearGradient>
-            <linearGradient id="portugalJersey" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#e53935"/>
-              <stop offset="100%" stop-color="#b71c1c"/>
+            <linearGradient id="homeJersey" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#4ecca3"/>
+              <stop offset="100%" stop-color="#2d9a78"/>
             </linearGradient>
-            <linearGradient id="egyptJersey" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#d32f2f"/>
-              <stop offset="100%" stop-color="#9a0007"/>
+            <linearGradient id="awayJersey" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#ff6b8a"/>
+              <stop offset="100%" stop-color="#c62828"/>
             </linearGradient>
+            <radialGradient id="skinTone" cx="40%" cy="35%" r="65%">
+              <stop offset="0%" stop-color="#f5c9a8"/>
+              <stop offset="70%" stop-color="#e8b48a"/>
+              <stop offset="100%" stop-color="#d4a06a"/>
+            </radialGradient>
             <radialGradient id="ballShine" cx="35%" cy="30%" r="65%">
               <stop offset="0%" stop-color="#ffffff"/>
               <stop offset="45%" stop-color="#f5f5f5"/>
@@ -165,56 +170,82 @@
           <div class="goal-net-front"></div>
         </div>
 
-        <!-- Egypt goalkeeper on the goal line -->
+        <!-- Goalkeeper on the goal line -->
         <div id="scene-keeper" class="scene-keeper">
-          <span class="player-label keeper-label">🇪🇬 EGYPT</span>
+          <span id="keeper-label" class="player-label keeper-label">Keeper</span>
           <svg class="player-svg keeper-svg" viewBox="0 0 64 92" aria-hidden="true">
             <g class="keeper-figure" filter="url(#softShadow)">
               <ellipse class="player-shadow" cx="32" cy="88" rx="15" ry="3" fill="rgba(0,0,0,0.3)"/>
               <g class="leg leg-l">
-                <rect class="sock sock-l" x="22" y="66" width="7" height="11" rx="1" fill="#111"/>
+                <rect class="sock sock-l" x="22" y="66" width="7" height="11" rx="1"/>
                 <rect class="boot boot-l" x="21" y="75" width="9" height="7" rx="2"/>
               </g>
               <g class="leg leg-r">
-                <rect class="sock sock-r" x="35" y="66" width="7" height="11" rx="1" fill="#111"/>
+                <rect class="sock sock-r" x="35" y="66" width="7" height="11" rx="1"/>
                 <rect class="boot boot-r" x="34" y="75" width="9" height="7" rx="2"/>
               </g>
-              <rect class="shorts egypt-shorts" x="23" y="53" width="18" height="14" rx="3"/>
-              <rect class="jersey keeper-jersey" x="21" y="34" width="22" height="21" rx="4" fill="url(#egyptJersey)"/>
-              <rect class="jersey-stripe" x="21" y="42" width="22" height="3" fill="#fff" opacity="0.9"/>
-              <path class="egypt-eagle" d="M32 38 L35 41 L32 44 L29 41 Z" fill="#c9a227"/>
+              <rect class="shorts player-shorts" x="23" y="53" width="18" height="14" rx="3"/>
+              <rect class="jersey keeper-jersey" x="21" y="34" width="22" height="21" rx="4"/>
               <rect class="arm arm-l" x="13" y="36" width="9" height="17" rx="4" transform="rotate(-28 17 44)"/>
               <rect class="arm arm-r" x="42" y="36" width="9" height="17" rx="4" transform="rotate(28 47 44)"/>
-              <ellipse class="glove glove-l" cx="10" cy="50" rx="7" ry="6" fill="#1b5e20" stroke="#0d3d13" stroke-width="1"/>
-              <ellipse class="glove glove-r" cx="54" cy="50" rx="7" ry="6" fill="#1b5e20" stroke="#0d3d13" stroke-width="1"/>
-              <circle class="head" cx="32" cy="26" r="9.5" fill="#c68642"/>
-              <path class="hair" d="M23 24 Q32 14 41 24 Q40 18 32 16 Q24 18 23 24" fill="#1a1a1a"/>
+              <ellipse class="glove glove-l" cx="10" cy="50" rx="7" ry="6"/>
+              <ellipse class="glove glove-r" cx="54" cy="50" rx="7" ry="6"/>
+              <g class="face">
+                <ellipse class="head" cx="32" cy="26" rx="9.5" ry="10.5"/>
+                <path class="hair" d="M22 22 Q32 9 42 22 Q41 16 32 13 Q23 16 22 22"/>
+                <path class="hair-side" d="M22 22 Q20 28 21 32" fill="none" stroke="#2c1810" stroke-width="1.5" opacity="0.5"/>
+                <ellipse class="cheek" cx="25" cy="28" rx="2.2" ry="1.4" opacity="0.35"/>
+                <ellipse class="cheek" cx="39" cy="28" rx="2.2" ry="1.4" opacity="0.35"/>
+                <path class="brow" d="M25 20 Q28 17.5 31 20" fill="none" stroke="#3e2723" stroke-width="1.3" stroke-linecap="round"/>
+                <path class="brow" d="M33 20 Q36 17.5 39 20" fill="none" stroke="#3e2723" stroke-width="1.3" stroke-linecap="round"/>
+                <ellipse class="eye-white" cx="28" cy="23" rx="2.8" ry="2.1"/>
+                <ellipse class="eye-white" cx="36" cy="23" rx="2.8" ry="2.1"/>
+                <circle class="eye-iris" cx="28.3" cy="23" r="1.3"/>
+                <circle class="eye-iris" cx="36.3" cy="23" r="1.3"/>
+                <circle class="eye-shine" cx="28.8" cy="22.4" r="0.55"/>
+                <circle class="eye-shine" cx="36.8" cy="22.4" r="0.55"/>
+                <path class="nose" d="M32 23.5 L32 27.5" stroke="rgba(80,50,30,0.25)" stroke-width="1.1" stroke-linecap="round"/>
+                <path class="smile" d="M27 30 Q32 33.5 37 30" fill="none" stroke="#b56545" stroke-width="1.1" stroke-linecap="round"/>
+              </g>
             </g>
           </svg>
         </div>
 
-        <!-- Ronaldo at the penalty spot -->
+        <!-- Shooter at the penalty spot -->
         <div id="scene-shooter" class="scene-shooter">
-          <span class="player-label shooter-label">CR7 🇵🇹</span>
+          <span id="shooter-label" class="player-label shooter-label">Shooter</span>
           <svg class="player-svg shooter-svg" viewBox="0 0 56 88" aria-hidden="true">
             <g class="shooter-figure" filter="url(#softShadow)">
               <ellipse class="player-shadow" cx="28" cy="84" rx="13" ry="3" fill="rgba(0,0,0,0.35)"/>
               <g class="leg leg-l">
-                <rect class="sock sock-l" x="20" y="64" width="6" height="10" rx="1" fill="#fff"/>
+                <rect class="sock sock-l" x="20" y="64" width="6" height="10" rx="1"/>
                 <rect class="boot boot-l" x="19" y="72" width="8" height="6" rx="1.5"/>
               </g>
               <g class="leg leg-r kick-leg">
-                <rect class="sock sock-r" x="30" y="64" width="6" height="10" rx="1" fill="#fff"/>
+                <rect class="sock sock-r" x="30" y="64" width="6" height="10" rx="1"/>
                 <rect class="boot boot-r" x="29" y="72" width="8" height="6" rx="1.5"/>
               </g>
-              <rect class="shorts ronaldo-shorts" x="20" y="51" width="16" height="14" rx="2" fill="#fff"/>
-              <rect class="jersey shooter-jersey" x="18" y="33" width="20" height="20" rx="3" fill="url(#portugalJersey)"/>
-              <rect class="jersey-collar" x="18" y="33" width="20" height="4" rx="2" fill="#1b5e20"/>
-              <text class="shirt-number" x="28" y="48" text-anchor="middle" font-size="9" font-weight="bold" fill="#fff">7</text>
-              <rect class="arm arm-l" x="11" y="35" width="7" height="15" rx="3" transform="rotate(-18 14 42)" fill="#c68642"/>
-              <rect class="arm arm-r" x="38" y="35" width="7" height="15" rx="3" transform="rotate(38 41 42)" fill="#c68642"/>
-              <circle class="head" cx="28" cy="24" r="8.5" fill="#c68642"/>
-              <path class="hair cr7-hair" d="M19 22 Q28 10 37 22 Q36 15 28 13 Q20 15 19 22 M24 12 L28 8 L32 12" fill="#1a1a1a"/>
+              <rect class="shorts player-shorts" x="20" y="51" width="16" height="14" rx="2"/>
+              <rect class="jersey shooter-jersey" x="18" y="33" width="20" height="20" rx="3"/>
+              <rect class="arm arm-l" x="11" y="35" width="7" height="15" rx="3" transform="rotate(-18 14 42)"/>
+              <rect class="arm arm-r" x="38" y="35" width="7" height="15" rx="3" transform="rotate(38 41 42)"/>
+              <g class="face">
+                <ellipse class="head" cx="28" cy="24" rx="8.5" ry="9.5"/>
+                <path class="hair" d="M19.5 20 Q28 8.5 36.5 20 Q35.5 14 28 12 Q20.5 14 19.5 20"/>
+                <path class="hair-side" d="M19.5 20 Q18 26 19 30" fill="none" stroke="#2c1810" stroke-width="1.2" opacity="0.45"/>
+                <ellipse class="cheek" cx="22" cy="26" rx="2" ry="1.2" opacity="0.35"/>
+                <ellipse class="cheek" cx="34" cy="26" rx="2" ry="1.2" opacity="0.35"/>
+                <path class="brow" d="M21.5 18.5 Q24.5 16.5 27.5 18.5" fill="none" stroke="#3e2723" stroke-width="1.2" stroke-linecap="round"/>
+                <path class="brow" d="M28.5 18.5 Q31.5 16.5 34.5 18.5" fill="none" stroke="#3e2723" stroke-width="1.2" stroke-linecap="round"/>
+                <ellipse class="eye-white" cx="24.5" cy="21.5" rx="2.5" ry="1.9"/>
+                <ellipse class="eye-white" cx="31.5" cy="21.5" rx="2.5" ry="1.9"/>
+                <circle class="eye-iris" cx="24.7" cy="21.5" r="1.2"/>
+                <circle class="eye-iris" cx="31.7" cy="21.5" r="1.2"/>
+                <circle class="eye-shine" cx="25.1" cy="20.9" r="0.5"/>
+                <circle class="eye-shine" cx="32.1" cy="20.9" r="0.5"/>
+                <path class="nose" d="M28 21.5 L28 25" stroke="rgba(80,50,30,0.25)" stroke-width="1" stroke-linecap="round"/>
+                <path class="smile" d="M24 27.5 Q28 30.5 32 27.5" fill="none" stroke="#b56545" stroke-width="1" stroke-linecap="round"/>
+              </g>
             </g>
           </svg>
         </div>
@@ -244,6 +275,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
   <script src="firebase-config.js"></script>
-  <script src="game.js?v=12"></script>
+  <script src="game.js?v=13"></script>
 </body>
 </html>
