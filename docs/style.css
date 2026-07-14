@@ -274,18 +274,18 @@ input:focus {
   opacity: 1;
 }
 
-/* ── Pitch simulation scene (realistic) ── */
+/* ── Pitch simulation scene (realistic penalty distance) ── */
 .pitch-scene {
   position: relative;
-  height: min(52vw, 340px);
-  min-height: 280px;
+  height: min(62vw, 420px);
+  min-height: 360px;
   margin-bottom: 14px;
   border-radius: 12px;
   overflow: hidden;
   border: 2px solid rgba(255, 255, 255, 0.12);
   background: #1b5e20;
   box-shadow: inset 0 -20px 40px rgba(0, 0, 0, 0.25), 0 4px 16px rgba(0, 0, 0, 0.35);
-  perspective: 420px;
+  perspective: 520px;
 }
 
 .pitch-scene.simulating {
@@ -311,7 +311,7 @@ input:focus {
 /* Sky & clouds */
 .pitch-sky {
   position: absolute;
-  inset: 0 0 68% 0;
+  inset: 0 0 74% 0;
   background: linear-gradient(180deg, #3d6a9e 0%, #6fa8dc 55%, #9ec8ee 100%);
 }
 
@@ -358,7 +358,7 @@ input:focus {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 68%;
+  height: 74%;
   background: linear-gradient(180deg, #43a047 0%, #2e7d32 40%, #1b5e20 100%);
 }
 
@@ -392,16 +392,16 @@ input:focus {
 
 .box-line {
   bottom: 0;
-  left: 5%;
-  right: 5%;
-  height: 38%;
+  left: 4%;
+  right: 4%;
+  height: 52%;
   border-bottom: none;
   border-radius: 2px 2px 0 0;
 }
 
 .penalty-spot {
   position: absolute;
-  bottom: 21%;
+  bottom: 9%;
   left: 50%;
   width: 9px;
   height: 9px;
@@ -413,34 +413,34 @@ input:focus {
 
 .penalty-arc {
   position: absolute;
-  bottom: 17%;
+  bottom: 5.5%;
   left: 50%;
-  width: 72px;
-  height: 36px;
-  margin-left: -36px;
+  width: 80px;
+  height: 40px;
+  margin-left: -40px;
   border: 2px solid rgba(255, 255, 255, 0.82);
   border-bottom: none;
-  border-radius: 72px 72px 0 0;
+  border-radius: 80px 80px 0 0;
   box-shadow: 0 0 2px rgba(0, 0, 0, 0.15);
 }
 
 .goal-shadow {
   position: absolute;
-  top: 8%;
+  top: 4%;
   left: 10%;
   right: 10%;
-  height: 12px;
-  background: radial-gradient(ellipse, rgba(0,0,0,0.35) 0%, transparent 70%);
+  height: 14px;
+  background: radial-gradient(ellipse, rgba(0,0,0,0.4) 0%, transparent 70%);
 }
 
-/* 3D goal frame */
+/* 3D goal frame — smaller & higher for realistic penalty depth */
 .goal-3d {
   position: absolute;
-  top: 14%;
-  left: 8%;
-  right: 8%;
-  height: 52%;
-  transform: rotateX(5deg);
+  top: 5%;
+  left: 10%;
+  right: 10%;
+  height: 36%;
+  transform: rotateX(8deg);
   transform-origin: bottom center;
 }
 
@@ -472,8 +472,23 @@ input:focus {
 }
 
 .goal-touch-zone.keeper-active {
-  background: rgba(233, 69, 96, 0.06);
-  box-shadow: inset 0 0 0 2px rgba(233, 69, 96, 0.3);
+  background: rgba(233, 69, 96, 0.12);
+  box-shadow: inset 0 0 0 3px rgba(233, 69, 96, 0.55);
+  animation: keeperPulse 1s ease-in-out infinite alternate;
+}
+
+.pitch-scene.keeper-react {
+  border-color: rgba(233, 69, 96, 0.65);
+  box-shadow: 0 0 20px rgba(233, 69, 96, 0.25), inset 0 -20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.pitch-scene.keeper-react .scene-shooter {
+  filter: drop-shadow(0 0 6px rgba(255, 235, 59, 0.5));
+}
+
+@keyframes keeperPulse {
+  from { background: rgba(233, 69, 96, 0.08); }
+  to { background: rgba(233, 69, 96, 0.18); }
 }
 
 .shot-marker {
@@ -679,7 +694,7 @@ input:focus {
 
 .scene-shooter {
   position: absolute;
-  bottom: 10%;
+  bottom: 1%;
   left: 50%;
   transform: translateX(-50%);
   z-index: 4;
@@ -688,6 +703,92 @@ input:focus {
 
 .scene-shooter.idle {
   animation: shooterBounce 1.4s ease-in-out infinite;
+}
+
+.scene-shooter.wind-up {
+  animation: none;
+}
+
+.scene-shooter.wind-up .shooter-figure {
+  transform-origin: 26px 76px;
+  animation: windUpBody 0.85s ease-in-out infinite alternate;
+}
+
+.scene-shooter.wind-up.hint-left .shooter-figure {
+  animation: windUpBodyLeft 0.85s ease-in-out infinite alternate;
+}
+
+.scene-shooter.wind-up.hint-right .shooter-figure {
+  animation: windUpBodyRight 0.85s ease-in-out infinite alternate;
+}
+
+.scene-shooter.wind-up.hint-center .shooter-figure {
+  animation: windUpBodyCenter 0.85s ease-in-out infinite alternate;
+}
+
+.scene-shooter.wind-up .kick-leg {
+  animation: windUpLeg 0.85s ease-in-out infinite alternate;
+}
+
+.scene-shooter.wind-up.hint-high .kick-leg {
+  animation: windUpLegHigh 0.85s ease-in-out infinite alternate;
+}
+
+.scene-shooter.wind-up.hint-low .kick-leg {
+  animation: windUpLegLow 0.85s ease-in-out infinite alternate;
+}
+
+.scene-shooter.wind-up.hint-left .leg-l {
+  animation: windUpPlantLeft 0.85s ease-in-out infinite alternate;
+}
+
+.scene-shooter.wind-up.hint-right .leg-l {
+  animation: windUpPlantRight 0.85s ease-in-out infinite alternate;
+}
+
+@keyframes windUpBody {
+  from { transform: rotate(0deg) translateY(0); }
+  to { transform: rotate(-2deg) translateY(-3px); }
+}
+
+@keyframes windUpBodyLeft {
+  from { transform: rotate(0deg) translateX(0); }
+  to { transform: rotate(-8deg) translateX(-4px); }
+}
+
+@keyframes windUpBodyRight {
+  from { transform: rotate(0deg) translateX(0); }
+  to { transform: rotate(8deg) translateX(4px); }
+}
+
+@keyframes windUpBodyCenter {
+  from { transform: rotate(0deg) scale(1); }
+  to { transform: rotate(0deg) scale(1.03) translateY(-2px); }
+}
+
+@keyframes windUpLeg {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-28deg) translateY(-6px); }
+}
+
+@keyframes windUpLegHigh {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-42deg) translateY(-10px) translateX(2px); }
+}
+
+@keyframes windUpLegLow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-18deg) translateY(-2px) translateX(-2px); }
+}
+
+@keyframes windUpPlantLeft {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(6deg) translateX(2px); }
+}
+
+@keyframes windUpPlantRight {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-4deg) translateX(-2px); }
 }
 
 .scene-shooter.kick {
@@ -743,12 +844,12 @@ input:focus {
 
 .scene-ball {
   position: absolute;
-  bottom: 17%;
+  bottom: 8%;
   left: 50%;
   transform: translate(-50%, 0);
   z-index: 6;
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.45));
   transition: left 0.5s cubic-bezier(0.15, 0.85, 0.35, 1),
               top 0.5s cubic-bezier(0.15, 0.85, 0.35, 1),
@@ -952,11 +1053,12 @@ code {
   }
 
   .pitch-scene {
-    height: 175px;
+    height: 220px;
+    min-height: 200px;
     margin-bottom: 10px;
   }
 
-  .shooter-svg { width: 36px; }
-  .keeper-svg { width: 40px; }
-  .scene-ball { width: 18px; height: 18px; }
+  .shooter-svg { width: 40px; }
+  .keeper-svg { width: 44px; }
+  .scene-ball { width: 20px; height: 20px; }
 }

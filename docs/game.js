@@ -1,5 +1,5 @@
 (() => {
-  const GOAL = { left: 8, top: 14, width: 84, height: 52 };
+  const GOAL = { left: 10, top: 5, width: 80, height: 34 };
   const SAVE_RADIUS = 14;
   const ANIM_MS = 1500;
 
@@ -37,7 +37,7 @@
   let db = null;
   let roomRef = null;
   let roomCode = null;
-  let playerId = localStorage.getItem("soccer-player-id");
+  let playerId = sessionStorage.getItem("soccer-player-id");
   let mySide = null;
   let unsubscribe = null;
   let lastResultRound = 0;
@@ -47,10 +47,11 @@
   let pitchInputReady = false;
   let keeperDragging = false;
   let previewDive = null;
+  let lastWindUpRound = 0;
 
   if (!playerId) {
     playerId = crypto.randomUUID();
-    localStorage.setItem("soccer-player-id", playerId);
+    sessionStorage.setItem("soccer-player-id", playerId);
   }
 
   const savedName = localStorage.getItem("soccer-player-name");
@@ -108,7 +109,7 @@
       playerAwayId: null,
       score: { home: 0, away: 0 },
       round: 1,
-      phase: "aim",
+      phase: "shoot",
       shooter: "home",
       shotX: null,
       shotY: null,
@@ -166,6 +167,17 @@
     return null;
   }
 
+  function getPhase(state) {
+    if (state.shotX != null && state.diveX == null) return "dive";
+    if (state.shotX == null && state.diveX == null) return "shoot";
+    if (state.phase === "dive" || state.phase === "shoot") return state.phase;
+    if (state.phase === "aim") {
+      if (state.shotX != null && state.diveX == null) return "dive";
+      return "shoot";
+    }
+    return "shoot";
+  }
+
   function isScored(shotX, shotY, diveX, diveY) {
     return Math.hypot(shotX - diveX, shotY - diveY) > SAVE_RADIUS;
   }
@@ -202,6 +214,37 @@
     shotMarker?.classList.add("hidden");
   }
 
+  function clearKickHints() {
+    const shooter = $("scene-shooter");
+    shooter?.classList.remove(
+      "wind-up", "hint-left", "hint-right", "hint-center", "hint-high", "hint-low"
+    );
+  }
+
+  function applyKickWindUp(state) {
+    const { amKeeper } = getRole(state);
+    if (!amKeeper || getPhase(state) !== "dive") {
+      clearKickHints();
+      pitchScene?.classList.remove("keeper-react");
+      return;
+    }
+    const shot = getShotCoords(state);
+    if (!shot) return;
+
+    pitchScene?.classList.add("keeper-react");
+
+    const shooter = $("scene-shooter");
+    if (!shooter) return;
+    clearKickHints();
+    shooter.classList.remove("idle");
+    shooter.classList.add("wind-up");
+    if (shot.x < 34) shooter.classList.add("hint-left");
+    else if (shot.x > 66) shooter.classList.add("hint-right");
+    else shooter.classList.add("hint-center");
+    if (shot.y < 42) shooter.classList.add("hint-high");
+    else shooter.classList.add("hint-low");
+  }
+
   function resetScene() {
     if (!pitchScene) return;
     const ball = $("scene-ball");
@@ -213,12 +256,13 @@
     ball.className = "scene-ball";
     ball.style.left = "50%";
     ball.style.top = "auto";
-    ball.style.bottom = "17%";
+    ball.style.bottom = "8%";
 
     keeper.className = "scene-keeper idle";
-    positionKeeperInGoal(50, 82);
+    positionKeeperInGoal(50, 92);
 
     shooter.className = "scene-shooter idle";
+    clearKickHints();
     pitchScene.classList.remove("simulating", "is-goal", "is-save");
     goal3d?.classList.remove("goal-shake");
     burst.classList.add("hidden");
@@ -291,38 +335,51 @@
     return { amShooter, amKeeper };
   }
 
-  function canInteract(state) {
-    const phase = state.phase || "aim";
+  function canShooterPick(state) {
+    const { amShooter } = getRole(state);
     return (
       !animating &&
       state.status === "playing" &&
-      phase === "aim" &&
+      getPhase(state) === "shoot" &&
       state.playerAway &&
-      mySide
+      amShooter &&
+      state.shotX == null
+    );
+  }
+
+  function canKeeperDive(state) {
+    const { amKeeper } = getRole(state);
+    return (
+      !animating &&
+      state.status === "playing" &&
+      getPhase(state) === "dive" &&
+      state.playerAway &&
+      amKeeper &&
+      state.diveX == null &&
+      state.shotX != null
     );
   }
 
   function renderPitchInteraction(state) {
-    if (!pitchScene || animating) return;
+    if (!pitchScene) return;
+
+    const phase = getPhase(state);
+    pitchScene.classList.toggle("phase-shoot", phase === "shoot");
+    pitchScene.classList.toggle("phase-dive", phase === "dive");
+
+    if (animating) return;
     pitchScene.setAttribute("aria-hidden", "false");
     pitchScene.classList.toggle("shooter-home", state.shooter === "home");
     pitchScene.classList.toggle("shooter-away", state.shooter === "away");
 
     const { amShooter, amKeeper } = getRole(state);
-    const interactive = canInteract(state);
 
     goalTouchZone.className = "goal-touch-zone";
     $("scene-keeper")?.classList.remove("locked");
 
-    if (!interactive) {
-      goalTouchZone.classList.add("locked");
-      $("scene-keeper")?.classList.add("locked");
-      return;
-    }
-
-    if (amShooter && state.shotX == null) {
+    if (canShooterPick(state)) {
       goalTouchZone.classList.add("shooter-active");
-    } else if (amKeeper && state.diveX == null) {
+    } else if (canKeeperDive(state)) {
       goalTouchZone.classList.add("keeper-active", "keeper-mode");
     } else {
       goalTouchZone.classList.add("locked");
@@ -330,12 +387,18 @@
     }
 
     const shot = getShotCoords(state);
-    if (shot) showShotMarker(shot.x, shot.y);
-    else hideShotMarker();
+    if (amShooter && shot) {
+      showShotMarker(shot.x, shot.y);
+      clearKickHints();
+    } else {
+      hideShotMarker();
+      if (amKeeper && phase === "dive") applyKickWindUp(state);
+      else if (!amKeeper) clearKickHints();
+    }
 
     const dive = previewDive || getDiveCoords(state);
     if (dive) positionKeeperInGoal(dive.x, dive.y);
-    else if (!keeperDragging) positionKeeperInGoal(50, 82);
+    else if (!keeperDragging) positionKeeperInGoal(50, 92);
   }
 
   function renderScoreboard(state) {
@@ -395,23 +458,31 @@
     const { amShooter, amKeeper } = getRole(state);
     const shooterName = state.shooter === "home" ? homeName : awayName;
 
-    if ((state.phase || "aim") === "aim") {
-      if (state.shotX != null && state.diveX != null) {
-        statusLabel.textContent = "Scoring the round…";
+    const phase = getPhase(state);
+
+    if (state.status === "playing" && state.playerAway) {
+      if (phase === "shoot") {
+        if (amShooter) {
+          statusLabel.textContent = "Tap the goal to pick your target (only you see it).";
+        } else if (amKeeper) {
+          statusLabel.textContent = "Watch the shooter… get ready to read the kick!";
+        } else {
+          statusLabel.textContent = `${shooterName} is lining up the shot…`;
+        }
         return;
       }
-      if (amShooter) {
-        statusLabel.textContent =
-          state.shotX == null
-            ? "Tap the goal where you want to shoot!"
-            : "Shot locked — waiting for keeper…";
-      } else if (amKeeper) {
-        statusLabel.textContent =
-          state.diveX == null
-            ? "Drag the keeper or slide your finger in the goal!"
-            : "Dive locked — waiting for shot…";
-      } else {
-        statusLabel.textContent = `${shooterName} is shooting…`;
+      if (phase === "dive") {
+        if (amShooter) {
+          statusLabel.textContent = "Target locked — waiting for the keeper to react.";
+        } else if (amKeeper) {
+          statusLabel.textContent =
+            state.diveX == null
+              ? "Read the leg movement — drag to dive!"
+              : "Dive locked — resolving…";
+        } else {
+          statusLabel.textContent = `${shooterName} shot — keeper is deciding…`;
+        }
+        return;
       }
     }
   }
@@ -422,42 +493,44 @@
   }
 
   async function maybeResolveRound() {
-    if (!roomRef || resolving || mySide !== "home") return;
-
-    const snap = await roomRef.once("value");
-    const state = snap.val();
-    if (!state || state.status !== "playing" || (state.phase || "aim") !== "aim") return;
-    if (state.shotX == null || state.shotY == null || state.diveX == null || state.diveY == null) return;
-    if (state.history?.some((h) => h.round === state.round)) return;
+    if (!roomRef || resolving) return;
 
     resolving = true;
     try {
-      const scored = isScored(state.shotX, state.shotY, state.diveX, state.diveY);
-      const newScore = { home: state.score.home, away: state.score.away };
-      if (scored) newScore[state.shooter] += 1;
+      const result = await roomRef.transaction((state) => {
+        if (!state || state.status !== "playing" || getPhase(state) !== "dive") return;
+        if (state.shotX == null || state.shotY == null || state.diveX == null || state.diveY == null) return;
+        if (state.history?.some((h) => h.round === state.round)) return;
 
-      const historyEntry = {
-        round: state.round,
-        shooter: state.shooter,
-        shotX: state.shotX,
-        shotY: state.shotY,
-        diveX: state.diveX,
-        diveY: state.diveY,
-        scored,
-      };
-      const newHistory = [...(state.history || []), historyEntry];
-      const winner = checkMatchEnd(newScore, state.round);
+        const scored = isScored(state.shotX, state.shotY, state.diveX, state.diveY);
+        const newScore = { home: state.score.home, away: state.score.away };
+        if (scored) newScore[state.shooter] += 1;
 
-      if (winner) {
-        await roomRef.update({
-          score: newScore,
-          history: newHistory,
-          status: "finished",
-          winner,
-          phase: "finished",
-        });
-      } else {
-        await roomRef.update({
+        const historyEntry = {
+          round: state.round,
+          shooter: state.shooter,
+          shotX: state.shotX,
+          shotY: state.shotY,
+          diveX: state.diveX,
+          diveY: state.diveY,
+          scored,
+        };
+        const newHistory = [...(state.history || []), historyEntry];
+        const winner = checkMatchEnd(newScore, state.round);
+
+        if (winner) {
+          return {
+            ...state,
+            score: newScore,
+            history: newHistory,
+            status: "finished",
+            winner,
+            phase: "finished",
+          };
+        }
+
+        return {
+          ...state,
           score: newScore,
           history: newHistory,
           round: state.round + 1,
@@ -466,8 +539,12 @@
           shotY: null,
           diveX: null,
           diveY: null,
-          phase: "aim",
-        });
+          phase: "shoot",
+        };
+      });
+
+      if (result.committed && result.snapshot.val()) {
+        lastWindUpRound = 0;
       }
     } catch (err) {
       console.error("Resolve failed:", err);
@@ -479,10 +556,10 @@
   async function submitShot(x, y) {
     if (!roomRef) return;
     try {
-      await roomRef.update({ shotX: x, shotY: y });
-      await maybeResolveRound();
+      await roomRef.update({ shotX: x, shotY: y, phase: "dive" });
     } catch (err) {
       console.error(err);
+      hideShotMarker();
       statusLabel.textContent = firebaseErrorMessage(err);
     }
   }
@@ -509,17 +586,15 @@
       if (!roomRef || animating) return;
       roomRef.once("value").then((snap) => {
         const state = snap.val();
-        if (!canInteract(state)) return;
-        const { amShooter, amKeeper } = getRole(state);
         const pos = getGoalPercent(e.clientX, e.clientY);
 
-        if (amShooter && state.shotX == null) {
+        if (canShooterPick(state)) {
           showShotMarker(pos.x, pos.y);
           submitShot(pos.x, pos.y);
           return;
         }
 
-        if (amKeeper && state.diveX == null) {
+        if (canKeeperDive(state)) {
           keeperDragging = true;
           previewDive = pos;
           keeper?.classList.add("dragging");
@@ -564,6 +639,7 @@
     mySide = side;
     lastResultRound = 0;
     lastAnimatedRound = 0;
+    lastWindUpRound = 0;
     resetScene();
     setupPitchInput();
     roomCodeDisplay.textContent = code;
@@ -588,6 +664,7 @@
     mySide = null;
     lastResultRound = 0;
     lastAnimatedRound = 0;
+    lastWindUpRound = 0;
     animating = false;
     keeperDragging = false;
     resetScene();
@@ -694,10 +771,11 @@
     if (!roomRef) return;
     lastResultRound = 0;
     lastAnimatedRound = 0;
+    lastWindUpRound = 0;
     await roomRef.update({
       score: { home: 0, away: 0 },
       round: 1,
-      phase: "aim",
+      phase: "shoot",
       shooter: "home",
       shotX: null,
       shotY: null,
