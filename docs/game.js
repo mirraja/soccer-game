@@ -316,7 +316,7 @@
     gameSection.classList.remove("hidden");
     buildGoalZones();
 
-    roomRef = db.ref(`soccer-rooms/${code}`);
+    roomRef = db.ref(`rooms/${code}`);
     if (unsubscribe) roomRef.off("value", unsubscribe);
 
     unsubscribe = roomRef.on("value", (snap) => {
@@ -358,12 +358,12 @@
     try {
       const name = getPlayerName();
       let code = generateRoomCode();
-      let ref = db.ref(`soccer-rooms/${code}`);
+      let ref = db.ref(`rooms/${code}`);
 
       let existing = await ref.once("value");
       while (existing.val()) {
         code = generateRoomCode();
-        ref = db.ref(`soccer-rooms/${code}`);
+        ref = db.ref(`rooms/${code}`);
         existing = await ref.once("value");
       }
 
@@ -392,7 +392,7 @@
 
     try {
       const name = getPlayerName();
-      const ref = db.ref(`soccer-rooms/${code}`);
+      const ref = db.ref(`rooms/${code}`);
       const snap = await ref.once("value");
       const state = snap.val();
 
