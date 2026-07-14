@@ -307,9 +307,14 @@ input:focus {
   border-color: #4ecca3;
 }
 
+.zone.zone-locked {
+  opacity: 0.45;
+  cursor: default;
+  pointer-events: none;
+}
+
 .zone:disabled {
   cursor: default;
-  opacity: 0.55;
 }
 
 .zone.active {

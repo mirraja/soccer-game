@@ -126,21 +126,25 @@
       btn.dataset.zone = String(zoneIndex);
       btn.setAttribute("aria-label", label);
       btn.textContent = label;
-      btn.addEventListener("pointerup", (e) => {
+      const onZoneTap = (e) => {
         e.preventDefault();
+        if (btn.classList.contains("zone-locked")) return;
         handleZoneTap(zoneIndex);
-      });
+      };
+      btn.addEventListener("click", onZoneTap);
+      btn.addEventListener("pointerup", onZoneTap);
       goalGridEl.appendChild(btn);
     });
   }
 
   function renderGoalGrid(state) {
     const zones = goalGridEl.querySelectorAll(".zone");
+    const phase = state.phase || "aim";
     const amShooter = state.shooter === mySide;
-    const amKeeper = mySide && state.shooter !== mySide;
+    const amKeeper = Boolean(mySide && state.shooter && state.shooter !== mySide);
     const canPick =
       state.status === "playing" &&
-      state.phase === "aim" &&
+      phase === "aim" &&
       state.playerAway &&
       mySide;
 
@@ -151,10 +155,14 @@
       const i = Number(zone.dataset.zone);
       zone.className = "zone";
       const isMyPick = myZone === i;
-      const isActive = canPick && ((amShooter && state.shotZone == null) || (amKeeper && state.diveZone == null));
+      const canTap =
+        (amShooter && state.shotZone == null) ||
+        (amKeeper && state.diveZone == null);
+      const isInteractive = canPick && canTap;
 
       if (isMyPick) zone.classList.add("selected");
-      if (isActive) zone.classList.add("active");
+      if (isInteractive) zone.classList.add("active");
+      if (!isInteractive) zone.classList.add("zone-locked");
 
       if (lastEntry && lastEntry.round === state.round - 1) {
         if (lastEntry.shotZone === i) {
@@ -165,7 +173,7 @@
         }
       }
 
-      zone.disabled = !isActive || (amShooter && state.shotZone != null) || (amKeeper && state.diveZone != null);
+      zone.setAttribute("aria-disabled", String(!isInteractive));
     });
   }
 
@@ -227,7 +235,7 @@
     const amShooter = state.shooter === mySide;
     const shooterName = state.shooter === "home" ? homeName : awayName;
 
-    if (state.phase === "aim") {
+    if ((state.phase || "aim") === "aim") {
       if (state.shotZone != null && state.diveZone != null) {
         statusLabel.textContent = "Scoring the round…";
         return;
@@ -261,7 +269,7 @@
 
     const snap = await roomRef.once("value");
     const state = snap.val();
-    if (!state || state.status !== "playing" || state.phase !== "aim") return;
+    if (!state || state.status !== "playing" || (state.phase || "aim") !== "aim") return;
     if (state.shotZone == null || state.diveZone == null) return;
     if (state.history?.some((h) => h.round === state.round)) return;
 
@@ -438,23 +446,28 @@
   async function handleZoneTap(zone) {
     if (!roomRef || !mySide) return;
 
-    const snap = await roomRef.once("value");
-    const state = snap.val();
-    if (!state || state.status !== "playing" || state.phase !== "aim") return;
-    if (!state.playerAway) return;
+    try {
+      const snap = await roomRef.once("value");
+      const state = snap.val();
+      if (!state || state.status !== "playing" || (state.phase || "aim") !== "aim") return;
+      if (!state.playerAway) return;
 
-    const amShooter = state.shooter === mySide;
-    const amKeeper = !amShooter;
+      const amShooter = state.shooter === mySide;
+      const amKeeper = Boolean(mySide && state.shooter && state.shooter !== mySide);
 
-    if (amShooter && state.shotZone != null) return;
-    if (amKeeper && state.diveZone != null) return;
-    if (!amShooter && !amKeeper) return;
+      if (!amShooter && !amKeeper) return;
+      if (amShooter && state.shotZone != null) return;
+      if (amKeeper && state.diveZone != null) return;
 
-    const updates = {};
-    if (amShooter) updates.shotZone = zone;
-    if (amKeeper) updates.diveZone = zone;
-    await roomRef.update(updates);
-    await maybeResolveRound();
+      const updates = {};
+      if (amShooter) updates.shotZone = zone;
+      if (amKeeper) updates.diveZone = zone;
+      await roomRef.update(updates);
+      await maybeResolveRound();
+    } catch (err) {
+      console.error(err);
+      statusLabel.textContent = firebaseErrorMessage(err);
+    }
   }
 
   async function playAgain() {
