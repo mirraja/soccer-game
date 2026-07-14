@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Penalty Shootout — Play Online</title>
-  <link rel="stylesheet" href="style.css?v=2" />
+  <link rel="stylesheet" href="style.css?v=3" />
 </head>
 <body>
   <main class="app">
@@ -74,30 +74,112 @@
 
       <!-- Live pitch simulation -->
       <div id="pitch-scene" class="pitch-scene">
-        <div class="pitch-sky"></div>
+        <svg class="svg-defs" aria-hidden="true" width="0" height="0">
+          <defs>
+            <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#3d6a9e"/>
+              <stop offset="55%" stop-color="#6fa8dc"/>
+              <stop offset="100%" stop-color="#9ec8ee"/>
+            </linearGradient>
+            <linearGradient id="grassLight" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#4caf50"/>
+              <stop offset="100%" stop-color="#2e7d32"/>
+            </linearGradient>
+            <linearGradient id="grassDark" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#388e3c"/>
+              <stop offset="100%" stop-color="#1b5e20"/>
+            </linearGradient>
+            <linearGradient id="postGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#e8e8e8"/>
+              <stop offset="35%" stop-color="#ffffff"/>
+              <stop offset="65%" stop-color="#f5f5f5"/>
+              <stop offset="100%" stop-color="#bdbdbd"/>
+            </linearGradient>
+            <radialGradient id="ballShine" cx="35%" cy="30%" r="65%">
+              <stop offset="0%" stop-color="#ffffff"/>
+              <stop offset="45%" stop-color="#f5f5f5"/>
+              <stop offset="100%" stop-color="#bdbdbd"/>
+            </radialGradient>
+            <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.45"/>
+            </filter>
+          </defs>
+        </svg>
+
+        <div class="pitch-sky">
+          <div class="cloud cloud-a"></div>
+          <div class="cloud cloud-b"></div>
+        </div>
+
         <div class="pitch-grass">
-          <div class="pitch-stripe"></div>
-          <div class="pitch-stripe"></div>
-          <div class="pitch-stripe"></div>
+          <div class="grass-mow"></div>
+          <div class="grass-noise"></div>
+          <div class="pitch-line box-line"></div>
           <div class="penalty-spot"></div>
           <div class="penalty-arc"></div>
+          <div class="goal-shadow"></div>
         </div>
+
         <div class="goal-3d">
-          <div class="goal-post goal-left"></div>
-          <div class="goal-post goal-right"></div>
+          <div class="goal-back-bar"></div>
+          <div class="goal-post goal-post-l"></div>
+          <div class="goal-post goal-post-r"></div>
           <div class="goal-crossbar"></div>
-          <div class="goal-net"></div>
+          <div class="goal-net-back"></div>
+          <div class="goal-net-side goal-net-l"></div>
+          <div class="goal-net-side goal-net-r"></div>
+          <div class="goal-net-front"></div>
           <div id="scene-keeper" class="scene-keeper">
-            <span class="keeper-gloves">🧤</span>
-            <div class="player-head keeper-head"></div>
-            <div class="player-body keeper-body"></div>
+            <svg class="player-svg keeper-svg" viewBox="0 0 64 88" aria-hidden="true">
+              <g class="keeper-figure" filter="url(#softShadow)">
+                <ellipse class="player-shadow" cx="32" cy="84" rx="14" ry="3" fill="rgba(0,0,0,0.25)"/>
+                <rect class="boot boot-l" x="22" y="72" width="8" height="6" rx="2"/>
+                <rect class="boot boot-r" x="34" y="72" width="8" height="6" rx="2"/>
+                <rect class="sock sock-l" x="23" y="64" width="6" height="10" rx="1"/>
+                <rect class="sock sock-r" x="35" y="64" width="6" height="10" rx="1"/>
+                <rect class="shorts" x="24" y="52" width="16" height="14" rx="3"/>
+                <rect class="jersey keeper-jersey" x="22" y="34" width="20" height="20" rx="4"/>
+                <rect class="arm arm-l" x="14" y="36" width="8" height="16" rx="4" transform="rotate(-25 18 44)"/>
+                <rect class="arm arm-r" x="42" y="36" width="8" height="16" rx="4" transform="rotate(25 46 44)"/>
+                <ellipse class="glove glove-l" cx="12" cy="48" rx="6" ry="5"/>
+                <ellipse class="glove glove-r" cx="52" cy="48" rx="6" ry="5"/>
+                <circle class="head" cx="32" cy="26" r="9"/>
+                <ellipse class="hair" cx="32" cy="22" rx="8" ry="5"/>
+              </g>
+            </svg>
           </div>
         </div>
+
         <div id="scene-shooter" class="scene-shooter">
-          <div class="player-head shooter-head"></div>
-          <div class="player-body shooter-body"></div>
+          <svg class="player-svg shooter-svg" viewBox="0 0 52 80" aria-hidden="true">
+            <g class="shooter-figure" filter="url(#softShadow)">
+              <ellipse class="player-shadow" cx="26" cy="76" rx="11" ry="2.5" fill="rgba(0,0,0,0.3)"/>
+              <rect class="boot boot-l" x="18" y="66" width="7" height="5" rx="1.5"/>
+              <rect class="boot boot-r" x="27" y="66" width="7" height="5" rx="1.5"/>
+              <rect class="sock sock-l" x="19" y="58" width="5" height="9" rx="1"/>
+              <rect class="sock sock-r" x="28" y="58" width="5" height="9" rx="1"/>
+              <rect class="shorts" x="19" y="46" width="14" height="13" rx="2"/>
+              <rect class="jersey shooter-jersey" x="17" y="30" width="18" height="18" rx="3"/>
+              <rect class="arm arm-l" x="12" y="32" width="6" height="14" rx="3" transform="rotate(-15 15 39)"/>
+              <rect class="arm arm-r" x="34" y="32" width="6" height="14" rx="3" transform="rotate(35 37 39)"/>
+              <circle class="head" cx="26" cy="22" r="8"/>
+              <ellipse class="hair" cx="26" cy="18" rx="7" ry="4"/>
+            </g>
+          </svg>
         </div>
-        <div id="scene-ball" class="scene-ball">⚽</div>
+
+        <div id="scene-ball" class="scene-ball">
+          <svg class="ball-svg" viewBox="0 0 32 32" aria-hidden="true">
+            <circle cx="16" cy="16" r="14" fill="url(#ballShine)" stroke="#9e9e9e" stroke-width="0.5"/>
+            <path d="M16 4 L19 10 L16 14 L13 10 Z" fill="#424242" opacity="0.85"/>
+            <path d="M24 12 L22 18 L16 16 L18 10 Z" fill="#424242" opacity="0.75"/>
+            <path d="M22 22 L16 24 L14 18 L20 16 Z" fill="#424242" opacity="0.8"/>
+            <path d="M10 22 L8 16 L14 18 L16 24 Z" fill="#424242" opacity="0.75"/>
+            <path d="M8 12 L14 10 L16 16 L10 18 Z" fill="#424242" opacity="0.85"/>
+            <ellipse cx="12" cy="11" rx="3" ry="2" fill="#fff" opacity="0.35"/>
+          </svg>
+        </div>
+
         <div id="action-burst" class="action-burst hidden"></div>
       </div>
 
@@ -115,6 +197,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
   <script src="firebase-config.js"></script>
-  <script src="game.js?v=7"></script>
+  <script src="game.js?v=8"></script>
 </body>
 </html>
