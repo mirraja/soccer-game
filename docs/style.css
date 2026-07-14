@@ -17,6 +17,13 @@ body {
   padding: max(24px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(40px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
 }
 
+#game.card {
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 16px;
+}
+
 header {
   text-align: center;
   margin-bottom: 24px;
@@ -270,7 +277,8 @@ input:focus {
 /* ── Pitch simulation scene (realistic) ── */
 .pitch-scene {
   position: relative;
-  height: 230px;
+  height: min(52vw, 340px);
+  min-height: 280px;
   margin-bottom: 14px;
   border-radius: 12px;
   overflow: hidden;
@@ -428,12 +436,85 @@ input:focus {
 /* 3D goal frame */
 .goal-3d {
   position: absolute;
-  top: 18%;
-  left: 10%;
-  right: 10%;
-  height: 50%;
-  transform: rotateX(4deg);
+  top: 14%;
+  left: 8%;
+  right: 8%;
+  height: 52%;
+  transform: rotateX(5deg);
   transform-origin: bottom center;
+}
+
+.goal-touch-zone {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  cursor: crosshair;
+  touch-action: none;
+  border-radius: 2px;
+}
+
+.goal-touch-zone.keeper-mode {
+  cursor: grab;
+}
+
+.goal-touch-zone.keeper-mode:active {
+  cursor: grabbing;
+}
+
+.goal-touch-zone.locked {
+  pointer-events: none;
+  cursor: default;
+}
+
+.goal-touch-zone.shooter-active {
+  background: rgba(78, 204, 163, 0.08);
+  box-shadow: inset 0 0 0 2px rgba(78, 204, 163, 0.35);
+}
+
+.goal-touch-zone.keeper-active {
+  background: rgba(233, 69, 96, 0.06);
+  box-shadow: inset 0 0 0 2px rgba(233, 69, 96, 0.3);
+}
+
+.shot-marker {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  border: 3px solid #ffeb3b;
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(255, 235, 59, 0.8), inset 0 0 4px rgba(0,0,0,0.3);
+  z-index: 9;
+  pointer-events: none;
+  animation: markerPulse 0.8s ease-in-out infinite alternate;
+}
+
+.shot-marker::before,
+.shot-marker::after {
+  content: "";
+  position: absolute;
+  background: #ffeb3b;
+}
+
+.shot-marker::before {
+  left: 50%;
+  top: 2px;
+  bottom: 2px;
+  width: 2px;
+  margin-left: -1px;
+}
+
+.shot-marker::after {
+  top: 50%;
+  left: 2px;
+  right: 2px;
+  height: 2px;
+  margin-top: -1px;
+}
+
+@keyframes markerPulse {
+  from { transform: scale(1); opacity: 0.9; }
+  to { transform: scale(1.12); opacity: 1; }
 }
 
 .goal-back-bar {
@@ -528,8 +609,59 @@ input:focus {
   height: auto;
 }
 
-.shooter-svg { width: 42px; }
-.keeper-svg { width: 48px; }
+.shooter-svg { width: 56px; }
+.keeper-svg { width: 62px; }
+
+.leg { transform-origin: 30px 64px; }
+
+.scene-shooter.kick .kick-leg {
+  animation: kickLeg 0.5s ease-out;
+}
+
+.scene-shooter.kick .leg-l {
+  animation: plantLeg 0.5s ease-out;
+}
+
+@keyframes kickLeg {
+  0% { transform: rotate(0deg); }
+  40% { transform: rotate(-52deg) translateY(-4px); }
+  100% { transform: rotate(-8deg); }
+}
+
+@keyframes plantLeg {
+  0% { transform: rotate(0deg); }
+  40% { transform: rotate(8deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.scene-keeper.dive .leg-l {
+  animation: diveLegL 0.45s ease-out forwards;
+}
+
+.scene-keeper.dive .leg-r {
+  animation: diveLegR 0.45s ease-out forwards;
+}
+
+.scene-keeper.dive .keeper-figure {
+  animation: keeperStretch 0.45s ease-out;
+}
+
+@keyframes diveLegL {
+  to { transform: rotate(-35deg) translateX(-4px); }
+}
+
+@keyframes diveLegR {
+  to { transform: rotate(25deg) translateX(3px); }
+}
+
+@keyframes keeperStretch {
+  to { transform: scale(1.08, 0.95); }
+}
+
+@keyframes keeperReady {
+  from { transform: translate(-50%, 0); }
+  to { transform: translate(-50%, -4px); }
+}
 
 .head { fill: #d4a574; }
 .hair { fill: #3e2723; }
@@ -547,7 +679,7 @@ input:focus {
 
 .scene-shooter {
   position: absolute;
-  bottom: 12%;
+  bottom: 10%;
   left: 50%;
   transform: translateX(-50%);
   z-index: 4;
@@ -575,26 +707,31 @@ input:focus {
 
 .scene-shooter.kick .shooter-figure {
   transform-origin: 26px 76px;
-  animation: legKick 0.45s ease-out;
-}
-
-@keyframes legKick {
-  0% { transform: rotate(0); }
-  40% { transform: rotate(-8deg); }
-  100% { transform: rotate(0); }
 }
 
 .scene-keeper {
   position: absolute;
   bottom: 0;
   left: 50%;
-  transform: translate(-50%, 0);
-  z-index: 5;
+  z-index: 7;
+  touch-action: none;
+  cursor: grab;
   transition: left 0.55s cubic-bezier(0.25, 0.8, 0.3, 1),
               top 0.55s cubic-bezier(0.25, 0.8, 0.3, 1);
 }
 
+.scene-keeper.dragging {
+  cursor: grabbing;
+  z-index: 9;
+}
+
+.scene-keeper.locked {
+  pointer-events: none;
+  cursor: default;
+}
+
 .scene-keeper.idle {
+  transform: translate(-50%, 0);
   animation: keeperReady 1s ease-in-out infinite alternate;
 }
 
@@ -604,25 +741,14 @@ input:focus {
               top 0.45s cubic-bezier(0.2, 0.9, 0.3, 1);
 }
 
-.scene-keeper.dive .keeper-figure {
-  transform: scale(1.05) translateY(2px);
-  transition: transform 0.45s ease-out;
-}
-
-@keyframes keeperReady {
-  from { transform: translate(-50%, 0); }
-  to { transform: translate(-50%, -3px); }
-}
-
-/* Ball */
 .scene-ball {
   position: absolute;
-  bottom: 19%;
+  bottom: 17%;
   left: 50%;
   transform: translate(-50%, 0);
   z-index: 6;
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
   filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.45));
   transition: left 0.5s cubic-bezier(0.15, 0.85, 0.35, 1),
               top 0.5s cubic-bezier(0.15, 0.85, 0.35, 1),

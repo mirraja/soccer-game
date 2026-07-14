@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Penalty Shootout — Play Online</title>
-  <link rel="stylesheet" href="style.css?v=3" />
+  <link rel="stylesheet" href="style.css?v=4" />
 </head>
 <body>
   <main class="app">
@@ -121,6 +121,8 @@
         </div>
 
         <div class="goal-3d">
+          <div id="goal-touch-zone" class="goal-touch-zone" aria-label="Tap or drag to aim in the goal"></div>
+          <div id="shot-marker" class="shot-marker hidden"></div>
           <div class="goal-back-bar"></div>
           <div class="goal-post goal-post-l"></div>
           <div class="goal-post goal-post-r"></div>
@@ -133,10 +135,14 @@
             <svg class="player-svg keeper-svg" viewBox="0 0 64 88" aria-hidden="true">
               <g class="keeper-figure" filter="url(#softShadow)">
                 <ellipse class="player-shadow" cx="32" cy="84" rx="14" ry="3" fill="rgba(0,0,0,0.25)"/>
-                <rect class="boot boot-l" x="22" y="72" width="8" height="6" rx="2"/>
-                <rect class="boot boot-r" x="34" y="72" width="8" height="6" rx="2"/>
-                <rect class="sock sock-l" x="23" y="64" width="6" height="10" rx="1"/>
-                <rect class="sock sock-r" x="35" y="64" width="6" height="10" rx="1"/>
+                <g class="leg leg-l">
+                  <rect class="sock sock-l" x="23" y="64" width="6" height="10" rx="1"/>
+                  <rect class="boot boot-l" x="22" y="72" width="8" height="6" rx="2"/>
+                </g>
+                <g class="leg leg-r">
+                  <rect class="sock sock-r" x="35" y="64" width="6" height="10" rx="1"/>
+                  <rect class="boot boot-r" x="34" y="72" width="8" height="6" rx="2"/>
+                </g>
                 <rect class="shorts" x="24" y="52" width="16" height="14" rx="3"/>
                 <rect class="jersey keeper-jersey" x="22" y="34" width="20" height="20" rx="4"/>
                 <rect class="arm arm-l" x="14" y="36" width="8" height="16" rx="4" transform="rotate(-25 18 44)"/>
@@ -154,10 +160,14 @@
           <svg class="player-svg shooter-svg" viewBox="0 0 52 80" aria-hidden="true">
             <g class="shooter-figure" filter="url(#softShadow)">
               <ellipse class="player-shadow" cx="26" cy="76" rx="11" ry="2.5" fill="rgba(0,0,0,0.3)"/>
-              <rect class="boot boot-l" x="18" y="66" width="7" height="5" rx="1.5"/>
-              <rect class="boot boot-r" x="27" y="66" width="7" height="5" rx="1.5"/>
-              <rect class="sock sock-l" x="19" y="58" width="5" height="9" rx="1"/>
-              <rect class="sock sock-r" x="28" y="58" width="5" height="9" rx="1"/>
+              <g class="leg leg-l">
+                <rect class="sock sock-l" x="19" y="58" width="5" height="9" rx="1"/>
+                <rect class="boot boot-l" x="18" y="66" width="7" height="5" rx="1.5"/>
+              </g>
+              <g class="leg leg-r kick-leg">
+                <rect class="sock sock-r" x="28" y="58" width="5" height="9" rx="1"/>
+                <rect class="boot boot-r" x="27" y="66" width="7" height="5" rx="1.5"/>
+              </g>
               <rect class="shorts" x="19" y="46" width="14" height="13" rx="2"/>
               <rect class="jersey shooter-jersey" x="17" y="30" width="18" height="18" rx="3"/>
               <rect class="arm arm-l" x="12" y="32" width="6" height="14" rx="3" transform="rotate(-15 15 39)"/>
@@ -183,10 +193,6 @@
         <div id="action-burst" class="action-burst hidden"></div>
       </div>
 
-      <div class="goal-frame">
-        <div id="goal-grid" class="goal-grid" role="group" aria-label="Goal zones"></div>
-      </div>
-
       <div class="actions">
         <button id="btn-play-again" class="btn primary hidden" type="button">Play again</button>
         <button id="btn-leave" class="btn ghost" type="button">Leave game</button>
@@ -197,6 +203,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
   <script src="firebase-config.js"></script>
-  <script src="game.js?v=8"></script>
+  <script src="game.js?v=9"></script>
 </body>
 </html>

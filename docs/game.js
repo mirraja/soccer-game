@@ -1,17 +1,8 @@
 (() => {
-  const ZONE_LABELS = [
-    "Left Low",
-    "Left High",
-    "Center Low",
-    "Center High",
-    "Right Low",
-    "Right High",
-  ];
+  const GOAL = { left: 8, top: 14, width: 84, height: 52 };
+  const SAVE_RADIUS = 14;
+  const ANIM_MS = 1500;
 
-  // Grid fills row-by-row; layout is 3 columns × 2 rows (low row, then high row).
-  const ZONE_LAYOUT = [0, 2, 4, 1, 3, 5];
-
-  // Ball / keeper target positions on the pitch scene (%)
   const ZONE_SCENE_POS = {
     0: { left: 22, top: 54 },
     1: { left: 22, top: 34 },
@@ -21,14 +12,11 @@
     5: { left: 78, top: 34 },
   };
 
-  const ANIM_MS = 1500;
-
   const $ = (id) => document.getElementById(id);
 
   const lobby = $("lobby");
   const gameSection = $("game");
   const setupScreen = $("setup-screen");
-  const goalGridEl = $("goal-grid");
   const lobbyError = $("lobby-error");
   const playerNameInput = $("player-name");
   const roomCodeInput = $("room-code-input");
@@ -43,6 +31,8 @@
   const awayScoreEl = $("away-score");
   const btnPlayAgain = $("btn-play-again");
   const pitchScene = $("pitch-scene");
+  const goalTouchZone = $("goal-touch-zone");
+  const shotMarker = $("shot-marker");
 
   let db = null;
   let roomRef = null;
@@ -54,6 +44,9 @@
   let lastAnimatedRound = 0;
   let resolving = false;
   let animating = false;
+  let pitchInputReady = false;
+  let keeperDragging = false;
+  let previewDive = null;
 
   if (!playerId) {
     playerId = crypto.randomUUID();
@@ -62,6 +55,10 @@
 
   const savedName = localStorage.getItem("soccer-player-name");
   if (savedName) playerNameInput.value = savedName;
+
+  function clamp(v, min, max) {
+    return Math.max(min, Math.min(max, v));
+  }
 
   function isFirebaseConfigured() {
     return (
@@ -113,8 +110,10 @@
       round: 1,
       phase: "aim",
       shooter: "home",
-      shotZone: null,
-      diveZone: null,
+      shotX: null,
+      shotY: null,
+      diveX: null,
+      diveY: null,
       history: [],
       status: "playing",
       winner: null,
@@ -131,8 +130,76 @@
     return null;
   }
 
+  function goalToPitch(x, y) {
+    return {
+      left: GOAL.left + (x / 100) * GOAL.width,
+      top: GOAL.top + (y / 100) * GOAL.height,
+    };
+  }
+
+  function pitchToGoal(left, top) {
+    return {
+      x: clamp(((left - GOAL.left) / GOAL.width) * 100, 4, 96),
+      y: clamp(((top - GOAL.top) / GOAL.height) * 100, 4, 96),
+    };
+  }
+
+  function getShotCoords(state) {
+    if (state.shotX != null && state.shotY != null) {
+      return { x: state.shotX, y: state.shotY };
+    }
+    if (state.shotZone != null && ZONE_SCENE_POS[state.shotZone]) {
+      const p = ZONE_SCENE_POS[state.shotZone];
+      return pitchToGoal(p.left, p.top);
+    }
+    return null;
+  }
+
+  function getDiveCoords(state) {
+    if (state.diveX != null && state.diveY != null) {
+      return { x: state.diveX, y: state.diveY };
+    }
+    if (state.diveZone != null && ZONE_SCENE_POS[state.diveZone]) {
+      const p = ZONE_SCENE_POS[state.diveZone];
+      return pitchToGoal(p.left, p.top);
+    }
+    return null;
+  }
+
+  function isScored(shotX, shotY, diveX, diveY) {
+    return Math.hypot(shotX - diveX, shotY - diveY) > SAVE_RADIUS;
+  }
+
+  function getGoalPercent(clientX, clientY) {
+    const rect = goalTouchZone.getBoundingClientRect();
+    return {
+      x: clamp(((clientX - rect.left) / rect.width) * 100, 4, 96),
+      y: clamp(((clientY - rect.top) / rect.height) * 100, 4, 96),
+    };
+  }
+
   function delay(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  function positionKeeperInGoal(x, y) {
+    const keeper = $("scene-keeper");
+    if (!keeper) return;
+    keeper.style.left = `${x}%`;
+    keeper.style.top = `${y}%`;
+    keeper.style.bottom = "auto";
+    keeper.style.transform = "translate(-50%, -55%)";
+  }
+
+  function showShotMarker(x, y) {
+    if (!shotMarker) return;
+    shotMarker.classList.remove("hidden");
+    shotMarker.style.left = `${x}%`;
+    shotMarker.style.top = `${y}%`;
+  }
+
+  function hideShotMarker() {
+    shotMarker?.classList.add("hidden");
   }
 
   function resetScene() {
@@ -146,12 +213,10 @@
     ball.className = "scene-ball";
     ball.style.left = "50%";
     ball.style.top = "auto";
-    ball.style.bottom = "20%";
+    ball.style.bottom = "17%";
 
     keeper.className = "scene-keeper idle";
-    keeper.style.left = "50%";
-    keeper.style.top = "auto";
-    keeper.style.bottom = "2px";
+    positionKeeperInGoal(50, 82);
 
     shooter.className = "scene-shooter idle";
     pitchScene.classList.remove("simulating", "is-goal", "is-save");
@@ -159,6 +224,9 @@
     burst.classList.add("hidden");
     burst.className = "action-burst hidden";
     burst.textContent = "";
+    hideShotMarker();
+    previewDive = null;
+    keeperDragging = false;
   }
 
   async function playActionAnimation(entry, state) {
@@ -171,12 +239,14 @@
     const shooter = $("scene-shooter");
     const burst = $("action-burst");
     const goal3d = pitchScene?.querySelector(".goal-3d");
-    const shot = ZONE_SCENE_POS[entry.shotZone];
-    const dive = ZONE_SCENE_POS[entry.diveZone];
-    if (!shot || !dive || !ball || !keeper || !shooter) {
+    const shot = { x: entry.shotX, y: entry.shotY };
+    const dive = { x: entry.diveX, y: entry.diveY };
+    if (!ball || !keeper || !shooter) {
       animating = false;
       return;
     }
+
+    const shotPitch = goalToPitch(shot.x, shot.y);
 
     pitchScene.classList.add("simulating");
     pitchScene.classList.toggle("shooter-home", entry.shooter === "home");
@@ -184,20 +254,18 @@
 
     shooter.classList.remove("idle");
     shooter.classList.add("kick");
-    await delay(180);
+    await delay(200);
 
     ball.classList.add("fly");
     ball.style.bottom = "auto";
-    ball.style.left = `${shot.left}%`;
-    ball.style.top = `${shot.top}%`;
+    ball.style.left = `${shotPitch.left}%`;
+    ball.style.top = `${shotPitch.top}%`;
 
-    keeper.classList.remove("idle");
+    keeper.classList.remove("idle", "dragging");
     keeper.classList.add("dive");
-    keeper.style.bottom = "auto";
-    keeper.style.left = `${dive.left}%`;
-    keeper.style.top = `${dive.top}%`;
+    positionKeeperInGoal(dive.x, dive.y);
 
-    await delay(580);
+    await delay(600);
 
     if (entry.scored) {
       pitchScene.classList.add("is-goal");
@@ -217,72 +285,57 @@
     if (state) renderGame(state);
   }
 
-  function renderPitchScene(state) {
+  function getRole(state) {
+    const amShooter = state.shooter === mySide;
+    const amKeeper = Boolean(mySide && state.shooter && state.shooter !== mySide);
+    return { amShooter, amKeeper };
+  }
+
+  function canInteract(state) {
+    const phase = state.phase || "aim";
+    return (
+      !animating &&
+      state.status === "playing" &&
+      phase === "aim" &&
+      state.playerAway &&
+      mySide
+    );
+  }
+
+  function renderPitchInteraction(state) {
     if (!pitchScene || animating) return;
     pitchScene.setAttribute("aria-hidden", "false");
     pitchScene.classList.toggle("shooter-home", state.shooter === "home");
     pitchScene.classList.toggle("shooter-away", state.shooter === "away");
-  }
 
-  function buildGoalZones() {
-    goalGridEl.innerHTML = "";
-    ZONE_LAYOUT.forEach((zoneIndex) => {
-      const label = ZONE_LABELS[zoneIndex];
-      const btn = document.createElement("button");
-      btn.className = "zone";
-      btn.type = "button";
-      btn.dataset.zone = String(zoneIndex);
-      btn.setAttribute("aria-label", label);
-      btn.textContent = label;
-      const onZoneTap = (e) => {
-        e.preventDefault();
-        if (btn.classList.contains("zone-locked")) return;
-        handleZoneTap(zoneIndex);
-      };
-      btn.addEventListener("click", onZoneTap);
-      btn.addEventListener("pointerup", onZoneTap);
-      goalGridEl.appendChild(btn);
-    });
-  }
+    const { amShooter, amKeeper } = getRole(state);
+    const interactive = canInteract(state);
 
-  function renderGoalGrid(state) {
-    const zones = goalGridEl.querySelectorAll(".zone");
-    const phase = state.phase || "aim";
-    const amShooter = state.shooter === mySide;
-    const amKeeper = Boolean(mySide && state.shooter && state.shooter !== mySide);
-    const canPick =
-      state.status === "playing" &&
-      phase === "aim" &&
-      state.playerAway &&
-      mySide;
+    goalTouchZone.className = "goal-touch-zone";
+    $("scene-keeper")?.classList.remove("locked");
 
-    const myZone = amShooter ? state.shotZone : amKeeper ? state.diveZone : null;
-    const lastEntry = state.history?.[state.history.length - 1];
+    if (!interactive) {
+      goalTouchZone.classList.add("locked");
+      $("scene-keeper")?.classList.add("locked");
+      return;
+    }
 
-    zones.forEach((zone) => {
-      const i = Number(zone.dataset.zone);
-      zone.className = "zone";
-      const isMyPick = myZone === i;
-      const canTap =
-        (amShooter && state.shotZone == null) ||
-        (amKeeper && state.diveZone == null);
-      const isInteractive = canPick && canTap && !animating;
+    if (amShooter && state.shotX == null) {
+      goalTouchZone.classList.add("shooter-active");
+    } else if (amKeeper && state.diveX == null) {
+      goalTouchZone.classList.add("keeper-active", "keeper-mode");
+    } else {
+      goalTouchZone.classList.add("locked");
+      $("scene-keeper")?.classList.add("locked");
+    }
 
-      if (isMyPick) zone.classList.add("selected");
-      if (isInteractive) zone.classList.add("active");
-      if (!isInteractive) zone.classList.add("zone-locked");
+    const shot = getShotCoords(state);
+    if (shot) showShotMarker(shot.x, shot.y);
+    else hideShotMarker();
 
-      if (lastEntry && lastEntry.round === state.round - 1) {
-        if (lastEntry.shotZone === i) {
-          zone.classList.add(lastEntry.scored ? "reveal-goal" : "reveal-save");
-        }
-        if (lastEntry.diveZone === i && !lastEntry.scored) {
-          zone.classList.add("reveal-save");
-        }
-      }
-
-      zone.setAttribute("aria-disabled", String(!isInteractive));
-    });
+    const dive = previewDive || getDiveCoords(state);
+    if (dive) positionKeeperInGoal(dive.x, dive.y);
+    else if (!keeperDragging) positionKeeperInGoal(50, 82);
   }
 
   function renderScoreboard(state) {
@@ -314,11 +367,7 @@
     }
 
     if (state.status === "finished") {
-      if (state.winner === mySide) {
-        statusLabel.textContent = "You win! 🎉";
-      } else {
-        statusLabel.textContent = "You lose — good game!";
-      }
+      statusLabel.textContent = state.winner === mySide ? "You win! 🎉" : "You lose — good game!";
       resultLabel.classList.add("hidden");
       btnPlayAgain.classList.remove("hidden");
       return;
@@ -339,68 +388,61 @@
     if (lastEntry && lastEntry.round !== lastResultRound) {
       lastResultRound = lastEntry.round;
       resultLabel.classList.remove("hidden");
-      if (lastEntry.scored) {
-        resultLabel.textContent = "GOAL! ⚽";
-        resultLabel.className = "result goal";
-      } else {
-        resultLabel.textContent = "SAVED! 🧤";
-        resultLabel.className = "result save";
-      }
+      resultLabel.textContent = lastEntry.scored ? "GOAL! ⚽" : "SAVED! 🧤";
+      resultLabel.className = lastEntry.scored ? "result goal" : "result save";
     }
 
-    const amShooter = state.shooter === mySide;
+    const { amShooter, amKeeper } = getRole(state);
     const shooterName = state.shooter === "home" ? homeName : awayName;
 
     if ((state.phase || "aim") === "aim") {
-      if (state.shotZone != null && state.diveZone != null) {
+      if (state.shotX != null && state.diveX != null) {
         statusLabel.textContent = "Scoring the round…";
         return;
       }
-
       if (amShooter) {
-        if (state.shotZone == null) {
-          statusLabel.textContent = "Your turn to shoot! Tap a zone.";
-        } else {
-          statusLabel.textContent = "Shot locked in — waiting for keeper…";
-        }
+        statusLabel.textContent =
+          state.shotX == null
+            ? "Tap the goal where you want to shoot!"
+            : "Shot locked — waiting for keeper…";
+      } else if (amKeeper) {
+        statusLabel.textContent =
+          state.diveX == null
+            ? "Drag the keeper or slide your finger in the goal!"
+            : "Dive locked — waiting for shot…";
       } else {
-        if (state.diveZone == null) {
-          statusLabel.textContent = `${shooterName} is shooting — pick where to dive!`;
-        } else {
-          statusLabel.textContent = "Dive locked in — waiting for shot…";
-        }
+        statusLabel.textContent = `${shooterName} is shooting…`;
       }
     }
   }
 
   function renderGame(state) {
-    renderPitchScene(state);
-    renderGoalGrid(state);
+    renderPitchInteraction(state);
     updateStatus(state);
   }
 
   async function maybeResolveRound() {
-    if (!roomRef || resolving) return;
-    // Home player (game creator) resolves rounds to avoid conflicts
-    if (mySide !== "home") return;
+    if (!roomRef || resolving || mySide !== "home") return;
 
     const snap = await roomRef.once("value");
     const state = snap.val();
     if (!state || state.status !== "playing" || (state.phase || "aim") !== "aim") return;
-    if (state.shotZone == null || state.diveZone == null) return;
+    if (state.shotX == null || state.shotY == null || state.diveX == null || state.diveY == null) return;
     if (state.history?.some((h) => h.round === state.round)) return;
 
     resolving = true;
     try {
-      const scored = state.shotZone !== state.diveZone;
+      const scored = isScored(state.shotX, state.shotY, state.diveX, state.diveY);
       const newScore = { home: state.score.home, away: state.score.away };
       if (scored) newScore[state.shooter] += 1;
 
       const historyEntry = {
         round: state.round,
         shooter: state.shooter,
-        shotZone: state.shotZone,
-        diveZone: state.diveZone,
+        shotX: state.shotX,
+        shotY: state.shotY,
+        diveX: state.diveX,
+        diveY: state.diveY,
         scored,
       };
       const newHistory = [...(state.history || []), historyEntry];
@@ -420,8 +462,10 @@
           history: newHistory,
           round: state.round + 1,
           shooter: state.shooter === "home" ? "away" : "home",
-          shotZone: null,
-          diveZone: null,
+          shotX: null,
+          shotY: null,
+          diveX: null,
+          diveY: null,
           phase: "aim",
         });
       }
@@ -432,16 +476,99 @@
     }
   }
 
+  async function submitShot(x, y) {
+    if (!roomRef) return;
+    try {
+      await roomRef.update({ shotX: x, shotY: y });
+      await maybeResolveRound();
+    } catch (err) {
+      console.error(err);
+      statusLabel.textContent = firebaseErrorMessage(err);
+    }
+  }
+
+  async function submitDive(x, y) {
+    if (!roomRef) return;
+    try {
+      await roomRef.update({ diveX: x, diveY: y });
+      previewDive = null;
+      await maybeResolveRound();
+    } catch (err) {
+      console.error(err);
+      statusLabel.textContent = firebaseErrorMessage(err);
+    }
+  }
+
+  function setupPitchInput() {
+    if (pitchInputReady || !goalTouchZone) return;
+    pitchInputReady = true;
+
+    const keeper = $("scene-keeper");
+
+    function onGoalPointerDown(e) {
+      if (!roomRef || animating) return;
+      roomRef.once("value").then((snap) => {
+        const state = snap.val();
+        if (!canInteract(state)) return;
+        const { amShooter, amKeeper } = getRole(state);
+        const pos = getGoalPercent(e.clientX, e.clientY);
+
+        if (amShooter && state.shotX == null) {
+          showShotMarker(pos.x, pos.y);
+          submitShot(pos.x, pos.y);
+          return;
+        }
+
+        if (amKeeper && state.diveX == null) {
+          keeperDragging = true;
+          previewDive = pos;
+          keeper?.classList.add("dragging");
+          keeper?.classList.remove("idle");
+          positionKeeperInGoal(pos.x, pos.y);
+          goalTouchZone.setPointerCapture(e.pointerId);
+        }
+      });
+    }
+
+    function onGoalPointerMove(e) {
+      if (!keeperDragging) return;
+      const pos = getGoalPercent(e.clientX, e.clientY);
+      previewDive = pos;
+      positionKeeperInGoal(pos.x, pos.y);
+    }
+
+    function onGoalPointerUp(e) {
+      if (!keeperDragging) return;
+      keeperDragging = false;
+      keeper?.classList.remove("dragging");
+      try {
+        goalTouchZone.releasePointerCapture(e.pointerId);
+      } catch (_) { /* ignore */ }
+
+      if (previewDive) submitDive(previewDive.x, previewDive.y);
+    }
+
+    goalTouchZone.addEventListener("pointerdown", onGoalPointerDown);
+    goalTouchZone.addEventListener("pointermove", onGoalPointerMove);
+    goalTouchZone.addEventListener("pointerup", onGoalPointerUp);
+    goalTouchZone.addEventListener("pointercancel", onGoalPointerUp);
+
+    keeper?.addEventListener("pointerdown", (e) => {
+      e.stopPropagation();
+      onGoalPointerDown(e);
+    });
+  }
+
   function enterGame(code, side) {
     roomCode = code;
     mySide = side;
     lastResultRound = 0;
     lastAnimatedRound = 0;
     resetScene();
+    setupPitchInput();
     roomCodeDisplay.textContent = code;
     lobby.classList.add("hidden");
     gameSection.classList.remove("hidden");
-    buildGoalZones();
 
     roomRef = db.ref(`rooms/${code}`);
     if (unsubscribe) roomRef.off("value", unsubscribe);
@@ -462,6 +589,7 @@
     lastResultRound = 0;
     lastAnimatedRound = 0;
     animating = false;
+    keeperDragging = false;
     resetScene();
     gameSection.classList.add("hidden");
     lobby.classList.remove("hidden");
@@ -542,10 +670,7 @@
       }
 
       if (!state.playerAway) {
-        await ref.update({
-          playerAway: name,
-          playerAwayId: playerId,
-        });
+        await ref.update({ playerAway: name, playerAwayId: playerId });
         enterGame(code, "away");
         return;
       }
@@ -565,39 +690,8 @@
     }
   }
 
-  async function handleZoneTap(zone) {
-    if (!roomRef || !mySide) return;
-
-    try {
-      const snap = await roomRef.once("value");
-      const state = snap.val();
-      if (!state || state.status !== "playing" || (state.phase || "aim") !== "aim") return;
-      if (!state.playerAway) return;
-
-      const amShooter = state.shooter === mySide;
-      const amKeeper = Boolean(mySide && state.shooter && state.shooter !== mySide);
-
-      if (!amShooter && !amKeeper) return;
-      if (amShooter && state.shotZone != null) return;
-      if (amKeeper && state.diveZone != null) return;
-
-      const updates = {};
-      if (amShooter) updates.shotZone = zone;
-      if (amKeeper) updates.diveZone = zone;
-      await roomRef.update(updates);
-      await maybeResolveRound();
-    } catch (err) {
-      console.error(err);
-      statusLabel.textContent = firebaseErrorMessage(err);
-    }
-  }
-
   async function playAgain() {
     if (!roomRef) return;
-    const snap = await roomRef.once("value");
-    const state = snap.val();
-    if (!state) return;
-
     lastResultRound = 0;
     lastAnimatedRound = 0;
     await roomRef.update({
@@ -605,8 +699,10 @@
       round: 1,
       phase: "aim",
       shooter: "home",
-      shotZone: null,
-      diveZone: null,
+      shotX: null,
+      shotY: null,
+      diveX: null,
+      diveY: null,
       history: [],
       status: "playing",
       winner: null,
@@ -642,7 +738,7 @@
   });
 
   if (initFirebase()) {
-    buildGoalZones();
+    setupPitchInput();
     resetScene();
   }
 })();
