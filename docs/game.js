@@ -38,6 +38,7 @@
   let mySide = null;
   let unsubscribe = null;
   let lastResultRound = 0;
+  let resolving = false;
 
   if (!playerId) {
     playerId = crypto.randomUUID();
@@ -248,6 +249,56 @@
     updateStatus(state);
   }
 
+  async function maybeResolveRound() {
+    if (!roomRef || resolving) return;
+
+    const snap = await roomRef.once("value");
+    const state = snap.val();
+    if (!state || state.status !== "playing" || state.phase !== "aim") return;
+    if (state.shotZone === null || state.diveZone === null) return;
+
+    resolving = true;
+    try {
+      await roomRef.transaction((current) => {
+        if (!current || current.status !== "playing" || current.phase !== "aim") return;
+        if (current.shotZone === null || current.diveZone === null) return;
+
+        const { shotZone, diveZone, shooter, round, score } = current;
+        const scored = shotZone !== diveZone;
+        const newScore = { home: score.home, away: score.away };
+        if (scored) newScore[shooter] += 1;
+
+        const historyEntry = { round, shooter, shotZone, diveZone, scored };
+        const newHistory = [...(current.history || []), historyEntry];
+        const winner = checkMatchEnd(newScore, round);
+
+        if (winner) {
+          return {
+            ...current,
+            score: newScore,
+            history: newHistory,
+            status: "finished",
+            winner,
+            phase: "finished",
+          };
+        }
+
+        return {
+          ...current,
+          score: newScore,
+          history: newHistory,
+          round: round + 1,
+          shooter: shooter === "home" ? "away" : "home",
+          shotZone: null,
+          diveZone: null,
+          phase: "aim",
+        };
+      });
+    } finally {
+      resolving = false;
+    }
+  }
+
   function enterGame(code, side) {
     roomCode = code;
     mySide = side;
@@ -264,6 +315,7 @@
       const state = snap.val();
       if (!state) return;
       renderGame(state);
+      maybeResolveRound();
     });
   }
 
@@ -390,53 +442,11 @@
     if (amKeeper && state.diveZone !== null) return;
     if (!amShooter && !amKeeper) return;
 
-    const shotZone = amShooter ? zone : state.shotZone;
-    const diveZone = amKeeper ? zone : state.diveZone;
-
-    if (shotZone !== null && diveZone !== null) {
-      const scored = shotZone !== diveZone;
-      const newScore = { home: state.score.home, away: state.score.away };
-      if (scored) newScore[state.shooter] += 1;
-
-      const historyEntry = {
-        round: state.round,
-        shooter: state.shooter,
-        shotZone,
-        diveZone,
-        scored,
-      };
-      const newHistory = [...(state.history || []), historyEntry];
-
-      const winner = checkMatchEnd(newScore, state.round);
-
-      if (winner) {
-        await roomRef.update({
-          score: newScore,
-          history: newHistory,
-          shotZone,
-          diveZone,
-          status: "finished",
-          winner,
-          phase: "finished",
-        });
-      } else {
-        const nextShooter = state.shooter === "home" ? "away" : "home";
-        await roomRef.update({
-          score: newScore,
-          history: newHistory,
-          round: state.round + 1,
-          shooter: nextShooter,
-          shotZone: null,
-          diveZone: null,
-          phase: "aim",
-        });
-      }
-    } else {
-      const updates = {};
-      if (amShooter) updates.shotZone = zone;
-      if (amKeeper) updates.diveZone = zone;
-      await roomRef.update(updates);
-    }
+    const updates = {};
+    if (amShooter) updates.shotZone = zone;
+    if (amKeeper) updates.diveZone = zone;
+    await roomRef.update(updates);
+    await maybeResolveRound();
   }
 
   async function playAgain() {
