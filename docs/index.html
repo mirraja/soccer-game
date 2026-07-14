@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Penalty Shootout — Play Online</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="app">
+    <header>
+      <h1>⚽ Penalty Shootout</h1>
+      <p class="tagline">Play online with family anywhere in the world</p>
+    </header>
+
+    <!-- Setup screen when Firebase is not configured -->
+    <section id="setup-screen" class="card hidden">
+      <h2>Firebase setup required</h2>
+      <p>Copy <code>firebase-config.example.js</code> to <code>firebase-config.js</code>, add your Firebase project keys, then refresh.</p>
+      <ol>
+        <li>Create a free project at <a href="https://console.firebase.google.com" target="_blank" rel="noopener">Firebase Console</a></li>
+        <li>Enable <strong>Realtime Database</strong> (test mode is fine to start)</li>
+        <li>Add a web app and paste the config into <code>firebase-config.js</code></li>
+        <li>Push the change to GitHub</li>
+      </ol>
+    </section>
+
+    <!-- Lobby -->
+    <section id="lobby" class="card">
+      <label class="field">
+        <span>Your name</span>
+        <input id="player-name" type="text" maxlength="20" placeholder="Dad" autocomplete="nickname" />
+      </label>
+
+      <button id="btn-create" class="btn primary" type="button">Create new game</button>
+
+      <div class="divider">or join with a code</div>
+
+      <label class="field">
+        <span>Room code</span>
+        <input id="room-code-input" type="text" maxlength="6" placeholder="482917" inputmode="numeric" autocomplete="off" />
+      </label>
+      <button id="btn-join" class="btn secondary" type="button">Join game</button>
+
+      <p id="lobby-error" class="error hidden" role="alert"></p>
+    </section>
+
+    <!-- Game -->
+    <section id="game" class="card hidden">
+      <div class="game-meta">
+        <div class="room-badge">
+          Room: <strong id="room-code-display">------</strong>
+          <button id="btn-copy-code" class="btn tiny" type="button" title="Copy room code">Copy</button>
+          <button id="btn-share-code" class="btn tiny" type="button" title="Share room code">Share</button>
+        </div>
+        <p id="players-label" class="players"></p>
+        <p id="round-label" class="round"></p>
+      </div>
+
+      <div id="scoreboard" class="scoreboard" aria-live="polite">
+        <div class="score-team home">
+          <span id="home-name" class="team-name">Home</span>
+          <span id="home-score" class="team-score">0</span>
+        </div>
+        <span class="score-divider">–</span>
+        <div class="score-team away">
+          <span id="away-score" class="team-score">0</span>
+          <span id="away-name" class="team-name">Away</span>
+        </div>
+      </div>
+
+      <p id="status-label" class="status" role="status"></p>
+      <p id="result-label" class="result hidden" role="alert"></p>
+
+      <div class="goal-frame">
+        <div id="goal-grid" class="goal-grid" role="group" aria-label="Goal zones"></div>
+      </div>
+
+      <div class="actions">
+        <button id="btn-play-again" class="btn primary hidden" type="button">Play again</button>
+        <button id="btn-leave" class="btn ghost" type="button">Leave game</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
