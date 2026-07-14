@@ -151,7 +151,7 @@
       const i = Number(zone.dataset.zone);
       zone.className = "zone";
       const isMyPick = myZone === i;
-      const isActive = canPick && ((amShooter && state.shotZone === null) || (amKeeper && state.diveZone === null));
+      const isActive = canPick && ((amShooter && state.shotZone == null) || (amKeeper && state.diveZone == null));
 
       if (isMyPick) zone.classList.add("selected");
       if (isActive) zone.classList.add("active");
@@ -165,7 +165,7 @@
         }
       }
 
-      zone.disabled = !isActive || (amShooter && state.shotZone !== null) || (amKeeper && state.diveZone !== null);
+      zone.disabled = !isActive || (amShooter && state.shotZone != null) || (amKeeper && state.diveZone != null);
     });
   }
 
@@ -234,13 +234,13 @@
       }
 
       if (amShooter) {
-        if (state.shotZone === null) {
+        if (state.shotZone == null) {
           statusLabel.textContent = "Your turn to shoot! Tap a zone.";
         } else {
           statusLabel.textContent = "Shot locked in — waiting for keeper…";
         }
       } else {
-        if (state.diveZone === null) {
+        if (state.diveZone == null) {
           statusLabel.textContent = `${shooterName} is shooting — pick where to dive!`;
         } else {
           statusLabel.textContent = "Dive locked in — waiting for shot…";
@@ -446,8 +446,8 @@
     const amShooter = state.shooter === mySide;
     const amKeeper = !amShooter;
 
-    if (amShooter && state.shotZone !== null) return;
-    if (amKeeper && state.diveZone !== null) return;
+    if (amShooter && state.shotZone != null) return;
+    if (amKeeper && state.diveZone != null) return;
     if (!amShooter && !amKeeper) return;
 
     const updates = {};
